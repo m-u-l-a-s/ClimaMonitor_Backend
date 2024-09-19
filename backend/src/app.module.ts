@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
+import { CulturaModule } from './cultura/cultura.module';
 
 @Module({
   imports: [ConfigModule.forRoot(),
@@ -19,7 +20,7 @@ import { User } from './user/entities/user.entity';
       synchronize: true,
       logging: true,
     }), 
-    UserModule
+    UserModule, CulturaModule
   ],
   controllers: [AppController],
   providers: [AppService],
