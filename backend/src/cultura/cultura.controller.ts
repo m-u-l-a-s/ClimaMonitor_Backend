@@ -17,7 +17,7 @@ export class CulturaController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  findAll() : Promise<nano.DocumentListResponse<CulturaEntity>> {
+  findAll() : Promise<CulturaEntity[]> {
     return this.culturaService.findAll();
   }
 
