@@ -10,7 +10,7 @@ import { CulturaModule } from './cultura/cultura.module';
 @Module({
   imports: [ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      type: 'mysql',
+      type: 'mariadb',
       host: process.env.DB_HOST,
       port: parseInt(process.env.DB_PORT, 10),
       username: process.env.DB_USERNAME,
