@@ -14,8 +14,8 @@ export class CulturaService {
           url: "http://127.0.0.1:5984",
           requestDefaults: {
               auth: {
-                  username: "admin",
-                  password: "admin"
+                  username: process.env.COUCH_USERNAME,
+                  password: process.env.COUCH_PASSWORD
               }
           }
       })
