@@ -8,7 +8,8 @@ import { User } from './user/entities/user.entity';
 import { CulturaModule } from './cultura/cultura.module';
 
 @Module({
-  imports: [ConfigModule.forRoot(),
+  imports: [
+    ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'mariadb',
       host: process.env.DB_HOST,
@@ -19,8 +20,9 @@ import { CulturaModule } from './cultura/cultura.module';
       entities: [User],
       synchronize: true,
       logging: true,
-    }), 
-    UserModule, CulturaModule
+    }),
+    UserModule,
+    CulturaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

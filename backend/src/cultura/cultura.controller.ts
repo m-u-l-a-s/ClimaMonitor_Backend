@@ -61,10 +61,7 @@ export class CulturaController {
   @ApiParam({ name: 'rev', description: 'Revisão do documento para controle de versionamento', type: String }) // Documenta o parâmetro 'rev'
   @ApiResponse({ status: 200, description: 'Cultura removida com sucesso.' }) // Resposta esperada
   @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
-  remove(
-    @Param('id') id: string,
-    @Param('rev') rev: string,
-  ): Promise<nano.DocumentDestroyResponse> {
+  remove(@Param('id') id: string, @Param('rev') rev: string): Promise<nano.DocumentDestroyResponse> {
     return this.culturaService.remove(id, rev);
   }
 }
