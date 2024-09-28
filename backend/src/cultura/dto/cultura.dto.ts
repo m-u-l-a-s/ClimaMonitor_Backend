@@ -1,11 +1,13 @@
-import { IsString, Length, IsNumber, IsArray } from 'class-validator';
+import { IsString, Length, IsNumber, IsArray, ValidateNested, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Localização, Temperatura, Pluviometria, Alerta } from '../entities/cultura.entity';
 
 export class CulturaDto {
   @ApiProperty({
     description: 'Localização do ponto de cultivo',
     example: { latitude: '-23.5505', longitude: '-46.6333' },
   })
+  @IsObject()
   ponto_cultivo: Localização;
 
   @ApiProperty({
@@ -55,6 +57,7 @@ export class CulturaDto {
     ],
   })
   @IsArray()
+  @ValidateNested({ each: true }) // Validar cada item do array
   temperaturas: Temperatura[];
 
   @ApiProperty({
@@ -66,6 +69,7 @@ export class CulturaDto {
     ],
   })
   @IsArray()
+  @ValidateNested({ each: true })
   pluviometrias: Pluviometria[];
 
   @ApiProperty({
@@ -84,22 +88,3 @@ export class CulturaDto {
   @IsArray()
   alertasPluvi: Alerta[];
 }
-
-export type Temperatura = {
-  data: Date;
-  temperatura: number;
-};
-
-export type Pluviometria = {
-  data: Date;
-  pluviometria: number;
-};
-
-export type Localização = {
-  latitude: string;
-  longitude: string;
-};
-
-export type Alerta = {
-  [date: string]: number;
-};

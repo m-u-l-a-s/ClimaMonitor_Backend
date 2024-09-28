@@ -1,5 +1,4 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Localização, Temperatura, Pluviometria, Alerta, CulturaDto } from '../dto/cultura.dto';
 import { HydratedDocument } from 'mongoose';
 import { CulturaDto } from '../dto/cultura.dto';
 
@@ -25,35 +24,35 @@ export type Alerta = {
 };
 
 @Schema()
-export class CulturaEntity {
-  @Prop()
+export class Cultura {
+  @Prop({ type: Object, required: true }) // Definindo explicitamente que é um objeto e é obrigatório
   ponto_cultivo: Localização;
 
-  @Prop()
+  @Prop({ type: String, required: true }) // Nome da cultura como string obrigatória
   nome_cultivo: string;
   
-  @Prop()
+  @Prop({ type: Number, required: true }) // Temperatura máxima como número
   temperatura_max: number;
   
-  @Prop()
+  @Prop({ type: Number, required: true }) // Pluviometria máxima como número
   pluviometria_max: number;
   
-  @Prop()
+  @Prop({ type: Number, required: true }) // Temperatura mínima como número
   temperatura_min: number;
   
-  @Prop()
+  @Prop({ type: Number, required: true }) // Pluviometria mínima como número
   pluviometria_min: number;
   
-  @Prop()
+  @Prop({ type: [{ data: Date, temperatura: Number }], required: true }) // Array de objetos de temperatura
   temperaturas: Temperatura[];
   
-  @Prop()
+  @Prop({ type: [{ data: Date, pluviometria: Number }], required: true }) // Array de objetos de pluviometria
   pluviometrias: Pluviometria[];
   
-  @Prop()
+  @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
   alertasTemp: Alerta[];
   
-  @Prop()
+  @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
   alertasPluvi: Alerta[];
 
   constructor(dto: CulturaDto) {
