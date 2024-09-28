@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Put } from '@nestjs/common';
 import { CulturaService } from './cultura.service';
 import { CulturaDto } from './dto/cultura.dto';
-import { CulturaDocument, CulturaEntity } from './entities/cultura.entity';
+import { CulturaDocument, Cultura } from './entities/cultura.entity';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody } from '@nestjs/swagger';
 import * as nano from 'nano';
 
@@ -13,7 +13,7 @@ export class CulturaController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Cria uma nova cultura' }) // Descrição do endpoint
-  @ApiResponse({ status: 201, description: 'Cultura criada com sucesso.', type: CulturaEntity }) // Resposta esperada
+  @ApiResponse({ status: 201, description: 'Cultura criada com sucesso.', type: Cultura }) // Resposta esperada
   @ApiResponse({ status: 400, description: 'Dados inválidos.' }) // Possíveis erros
   @ApiBody({ type: CulturaDto, description: 'Dados da nova cultura' }) // Documenta o corpo da requisição
   create(@Body() dto: CulturaDto): Promise<CulturaDocument> {
@@ -23,7 +23,7 @@ export class CulturaController {
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lista todas as culturas' }) // Descrição do endpoint
-  @ApiResponse({ status: 200, description: 'Culturas retornadas com sucesso.', type: [CulturaEntity] }) // Resposta esperada
+  @ApiResponse({ status: 200, description: 'Culturas retornadas com sucesso.', type: [Cultura] }) // Resposta esperada
   findAll(): Promise<CulturaDocument[]> {
     return this.culturaService.findAll();
   }
@@ -32,7 +32,7 @@ export class CulturaController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Retorna uma cultura específica por ID' }) // Descrição do endpoint
   @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) // Documenta o parâmetro 'id'
-  @ApiResponse({ status: 200, description: 'Cultura retornada com sucesso.', type: CulturaEntity }) // Resposta esperada
+  @ApiResponse({ status: 200, description: 'Cultura retornada com sucesso.', type: Cultura }) // Resposta esperada
   @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
   findOne(@Param('id') id: string): Promise<CulturaDocument> {
     return this.culturaService.findOne(id);

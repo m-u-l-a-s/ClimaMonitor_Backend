@@ -10,11 +10,11 @@ import { Model } from 'mongoose';
 
 @Injectable()
 export class CulturaService {
-  private readonly repository: nano.DocumentScope<CulturaEntity>;
+  private readonly repository: nano.DocumentScope<Cultura>;
 
   private readonly httpService = new HttpService();
 
-  constructor(@InjectModel(CulturaEntity.name) private culturaModel : Model<CulturaEntity>) {}
+  constructor(@InjectModel(Cultura.name) private culturaModel : Model<Cultura>) {}
 
   async create(data: CulturaDto): Promise<CulturaDocument> {
     const clima = await this.getClima(data.ponto_cultivo.latitude, data.ponto_cultivo.longitude);

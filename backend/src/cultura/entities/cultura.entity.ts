@@ -1,8 +1,28 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Localização, Temperatura, Pluviometria, Alerta, CulturaDto } from '../dto/cultura.dto';
 import { HydratedDocument } from 'mongoose';
+import { CulturaDto } from '../dto/cultura.dto';
 
-export type CulturaDocument = HydratedDocument<CulturaEntity>;
+export type CulturaDocument = HydratedDocument<Cultura>;
+
+export type Temperatura = {
+  data: Date;
+  temperatura: number;
+};
+
+export type Pluviometria = {
+  data: Date;
+  pluviometria: number;
+};
+
+export type Localização = {
+  latitude: string;
+  longitude: string;
+};
+
+export type Alerta = {
+  [date: string]: number;
+};
 
 @Schema()
 export class CulturaEntity {
@@ -50,5 +70,4 @@ export class CulturaEntity {
   }
 }
 
-export const CulturaSchema = SchemaFactory.createForClass(CulturaEntity)
-
+export const CulturaSchema = SchemaFactory.createForClass(Cultura);
