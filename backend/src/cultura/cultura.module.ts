@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { CulturaService } from './cultura.service';
 import { CulturaController } from './cultura.controller';
-import { HttpModule } from '@nestjs/axios';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Cultura, CulturaSchema } from './entities/cultura.entity';
 
 @Module({
-  imports: [HttpModule],
+  imports: [MongooseModule.forFeature([{name : Cultura.name, schema : CulturaSchema}])],
   controllers: [CulturaController],
   providers: [CulturaService],
 })
