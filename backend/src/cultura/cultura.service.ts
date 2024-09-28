@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import * as nano from 'nano';
 import { CulturaDto } from './dto/cultura.dto';
-import { CulturaDocument, CulturaEntity } from './entities/cultura.entity';
+import { CulturaDocument, Cultura } from './entities/cultura.entity';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { format } from 'date-fns';
@@ -17,14 +17,22 @@ export class CulturaService {
   constructor(@InjectModel(Cultura.name) private culturaModel : Model<Cultura>) {}
 
   async create(data: CulturaDto): Promise<CulturaDocument> {
-    const clima = await this.getClima(data.ponto_cultivo.latitude, data.ponto_cultivo.longitude);
-
-    data.temperaturas = clima.temperatura;
-    data.pluviometrias = clima.pluviometria;
-
-    const culturaCreated = new this.culturaModel(data)
-
-    return culturaCreated.save();
+    try {
+      const clima = await this.getClima(data.ponto_cultivo.latitude, data.ponto_cultivo.longitude);
+  
+      data.temperaturas = clima.temperatura;
+      data.pluviometrias = clima.pluviometria;
+  
+      const culturaCreated = new this.culturaModel(data)
+  
+      return culturaCreated.save();
+      
+    } catch (error) {
+      data.temperaturas = []
+      data.pluviometrias = []
+      const culturaCreated = new this.culturaModel(data)
+      return culturaCreated.save()
+    }
   }
 
   private async getClima(latitude: string, longitude: string) {
