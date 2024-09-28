@@ -10,7 +10,8 @@ export interface iCultura extends nano.MaybeDocument {
   pluviometria_min: number;
   temperaturas: Temperatura[];
   pluviometrias: Pluviometria[];
-
+  lastUpdate: string;
+  
   alertasTemp: Alerta[];
   alertasPluvi: Alerta[];
 }

@@ -15,6 +15,7 @@ export class CulturaEntity implements iCultura {
   pluviometrias: Pluviometria[];
   alertasTemp: Alerta[];
   alertasPluvi: Alerta[];
+  lastUpdate: string;
 
   constructor(dto: CulturaDto) {
     this.ponto_cultivo = dto.ponto_cultivo;
@@ -27,6 +28,7 @@ export class CulturaEntity implements iCultura {
     this.pluviometrias = dto.pluviometrias;
     this.alertasTemp = dto.alertasTemp;
     this.alertasPluvi = dto.alertasPluvi;
+    this.lastUpdate = dto.lastUpdate;
   }
 
   processAPIresponse(response: nano.DocumentInsertResponse) {
