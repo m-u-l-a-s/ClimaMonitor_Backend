@@ -16,7 +16,7 @@ export class CulturaService {
 
   constructor(@InjectModel(CulturaEntity.name) private culturaModel : Model<CulturaEntity>) {}
 
-  async create(data: CulturaDto): Promise<CulturaEntity> {
+  async create(data: CulturaDto): Promise<CulturaDocument> {
     const clima = await this.getClima(data.ponto_cultivo.latitude, data.ponto_cultivo.longitude);
 
     data.temperaturas = clima.temperatura;
