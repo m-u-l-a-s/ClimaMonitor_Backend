@@ -1,19 +1,39 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Localização, Temperatura, Pluviometria, Alerta, CulturaDto } from '../dto/cultura.dto';
-import { iCultura } from './cultura.entity.interface';
-import * as nano from 'nano';
+import { HydratedDocument } from 'mongoose';
 
-export class CulturaEntity implements iCultura {
-  _id?: string;
-  _rev?: string;
+export type CulturaDocument = HydratedDocument<CulturaEntity>;
+
+@Schema()
+export class CulturaEntity {
+  @Prop()
   ponto_cultivo: Localização;
+
+  @Prop()
   nome_cultivo: string;
+  
+  @Prop()
   temperatura_max: number;
+  
+  @Prop()
   pluviometria_max: number;
+  
+  @Prop()
   temperatura_min: number;
+  
+  @Prop()
   pluviometria_min: number;
+  
+  @Prop()
   temperaturas: Temperatura[];
+  
+  @Prop()
   pluviometrias: Pluviometria[];
+  
+  @Prop()
   alertasTemp: Alerta[];
+  
+  @Prop()
   alertasPluvi: Alerta[];
 
   constructor(dto: CulturaDto) {
@@ -28,11 +48,7 @@ export class CulturaEntity implements iCultura {
     this.alertasTemp = dto.alertasTemp;
     this.alertasPluvi = dto.alertasPluvi;
   }
-
-  processAPIresponse(response: nano.DocumentInsertResponse) {
-    if (response.ok) {
-      this._id = response.id;
-      this._rev = response.rev;
-    }
-  }
 }
+
+export const CulturaSchema = SchemaFactory.createForClass(CulturaEntity)
+

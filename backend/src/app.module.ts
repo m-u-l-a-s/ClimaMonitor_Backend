@@ -6,6 +6,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
 import { CulturaModule } from './cultura/cultura.module';
+import { MongooseModule } from '@nestjs/mongoose';
+
 
 @Module({
   imports: [
@@ -23,6 +25,7 @@ import { CulturaModule } from './cultura/cultura.module';
     }),
     UserModule,
     CulturaModule,
+    MongooseModule.forRoot(process.env.MONGOOSE_URL)
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,27 +1,20 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import * as nano from 'nano';
 import { CulturaDto } from './dto/cultura.dto';
-import { CulturaEntity } from './entities/cultura.entity';
+import { CulturaDocument, CulturaEntity } from './entities/cultura.entity';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { format } from 'date-fns';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class CulturaService {
   private readonly repository: nano.DocumentScope<CulturaEntity>;
 
-  constructor(private readonly httpService: HttpService) {
-    const couchdb = require('nano')({
-      url: 'http://127.0.0.1:5984',
-      requestDefaults: {
-        auth: {
-          username: process.env.COUCH_USERNAME,
-          password: process.env.COUCH_PASSWORD,
-        },
-      },
-    });
-    this.repository = couchdb.db.use(process.env.COUCH_DATABASE);
-  }
+  private readonly httpService = new HttpService();
+
+  constructor(@InjectModel(CulturaEntity.name) private culturaModel : Model<CulturaEntity>) {}
 
   async create(data: CulturaDto): Promise<CulturaEntity> {
     const clima = await this.getClima(data.ponto_cultivo.latitude, data.ponto_cultivo.longitude);
@@ -29,14 +22,9 @@ export class CulturaService {
     data.temperaturas = clima.temperatura;
     data.pluviometrias = clima.pluviometria;
 
-    const cultura: CulturaEntity = new CulturaEntity(data);
-    const resp: nano.DocumentInsertResponse = await this.repository.insert(cultura);
-    if (!resp.ok) {
-      throw new ConflictException('Erro ao criar cultura');
-    }
-    cultura.processAPIresponse(resp);
+    const culturaCreated = new this.culturaModel(data)
 
-    return cultura;
+    return culturaCreated.save();
   }
 
   private async getClima(latitude: string, longitude: string) {
@@ -76,25 +64,27 @@ export class CulturaService {
     }
   }
 
-  async findAll(): Promise<CulturaEntity[]> {
+  async findAll(): Promise<CulturaDocument[]> {
     try {
-      const resp = await this.repository.list({ include_docs: true });
-      return resp.rows.map((row) => row.doc);
+      return this.culturaModel.find().exec()
     } catch (error) {
       throw new Error(error);
     }
   }
 
-  async findOne(id: string): Promise<CulturaEntity> {
-    return this.repository.get(id);
+  async findOne(id: string): Promise<CulturaDocument> {
+    try {
+      return this.culturaModel.findById(id).exec()
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 
-  async remove(id: string, rev: string): Promise<nano.DocumentDestroyResponse> {
-    return this.repository.destroy(id, rev);
+  async remove(id: string): Promise<{ deletedCount?: number }> {
+    return this.culturaModel.deleteOne({ _id: id }).exec();
   }
 
-  async update(id: string, rev: string, data: CulturaDto): Promise<nano.DocumentInsertResponse> {
-    const cultura: CulturaEntity = new CulturaEntity(data);
-    return this.repository.insert(cultura, { docName: id, rev: rev });
+  async update(id: string, data: CulturaDto): Promise<CulturaDocument> {
+    return this.culturaModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 }
