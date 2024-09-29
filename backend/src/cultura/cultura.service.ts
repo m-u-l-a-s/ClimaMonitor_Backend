@@ -1,44 +1,39 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import * as nano from 'nano';
 import { CulturaDto } from './dto/cultura.dto';
-import { CulturaEntity } from './entities/cultura.entity';
+import { CulturaDocument, Cultura } from './entities/cultura.entity';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { addDays, format, parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 
 @Injectable()
 export class CulturaService {
-  private readonly repository: nano.DocumentScope<CulturaEntity>;
+  private readonly repository: nano.DocumentScope<Cultura>;
 
-  constructor(private readonly httpService: HttpService) {
-    const couchdb = require('nano')({
-      url: 'http://127.0.0.1:5984',
-      requestDefaults: {
-        auth: {
-          username: process.env.COUCH_USERNAME,
-          password: process.env.COUCH_PASSWORD,
-        },
-      },
-    });
-    this.repository = couchdb.db.use(process.env.COUCH_DATABASE);
-  }
+  private readonly httpService = new HttpService();
 
-  async create(data: CulturaDto): Promise<CulturaEntity> {
-    const clima = await this.getClima(data.ponto_cultivo.latitude, data.ponto_cultivo.longitude);
+  constructor(@InjectModel(Cultura.name) private culturaModel: Model<Cultura>) {}
 
-    data.temperaturas = clima.temperaturas;
-    data.pluviometrias = clima.pluviometrias;
-    data.lastUpdate = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
+  async create(data: CulturaDto): Promise<CulturaDocument> {
+    try {
+      const clima = await this.getClima(data.ponto_cultivo.latitude, data.ponto_cultivo.longitude);
 
-    const cultura: CulturaEntity = new CulturaEntity(data);
-    const resp: nano.DocumentInsertResponse = await this.repository.insert(cultura);
-    if (!resp.ok) {
-      throw new ConflictException('Erro ao criar cultura');
+      data.temperaturas = clima.temperaturas;
+      data.pluviometrias = clima.pluviometrias;
+      data.lastUpdate = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
+
+      const culturaCreated = new this.culturaModel(data);
+
+      return culturaCreated.save();
+    } catch (error) {
+      data.temperaturas = [];
+      data.pluviometrias = [];
+      const culturaCreated = new this.culturaModel(data);
+      return culturaCreated.save();
     }
-    cultura.processAPIresponse(resp);
-
-    return cultura;
   }
 
   private async getClima(latitude: string, longitude: string, startDate?: string, endDate?: string) {
@@ -78,18 +73,22 @@ export class CulturaService {
     }
   }
 
-  async findAll(): Promise<CulturaEntity[]> {
+  async findAll(): Promise<CulturaDocument[]> {
     try {
-      const resp = await this.repository.list({ include_docs: true });
-      const culturas = resp.rows.map((row) => row.doc);
+      const culturas = await this.culturaModel.find().exec();
 
       const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+      console.log('hoje :' + hoje);
 
       for (const cultura of culturas) {
+        console.log('cultura.lastUpdate :' + cultura.lastUpdate);
+
         const ultimaAtualizacao = cultura.lastUpdate ? format(new Date(cultura.lastUpdate), 'yyyy-MM-dd') : null;
+        console.log('ultimaAtualizacao :' + ultimaAtualizacao);
 
         if (!ultimaAtualizacao || ultimaAtualizacao !== hoje) {
           const startDate = ultimaAtualizacao ? format(addDays(parseISO(ultimaAtualizacao), 1), 'yyyy-MM-dd') : hoje;
+          console.log('startDate :' + startDate);
 
           const novosDados = await this.getClima(
             cultura.ponto_cultivo.latitude,
@@ -118,7 +117,7 @@ export class CulturaService {
 
           cultura.lastUpdate = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
 
-          await this.repository.insert(cultura);
+          await this.culturaModel.updateOne({ _id: cultura._id }, { $set: cultura });
         }
       }
 
@@ -128,16 +127,19 @@ export class CulturaService {
     }
   }
 
-  async findOne(id: string): Promise<CulturaEntity> {
-    return this.repository.get(id);
+  async findOne(id: string): Promise<CulturaDocument> {
+    try {
+      return this.culturaModel.findById(id).exec();
+    } catch (error) {
+      throw new Error(error);
+    }
   }
 
-  async remove(id: string, rev: string): Promise<nano.DocumentDestroyResponse> {
-    return this.repository.destroy(id, rev);
+  async remove(id: string): Promise<{ deletedCount?: number }> {
+    return this.culturaModel.deleteOne({ _id: id }).exec();
   }
 
-  async update(id: string, rev: string, data: CulturaDto): Promise<nano.DocumentInsertResponse> {
-    const cultura: CulturaEntity = new CulturaEntity(data);
-    return this.repository.insert(cultura, { docName: id, rev: rev });
+  async update(id: string, data: CulturaDto): Promise<CulturaDocument> {
+    return this.culturaModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 }
