@@ -5,12 +5,12 @@ import { CulturaDto } from '../dto/cultura.dto';
 export type CulturaDocument = HydratedDocument<Cultura>;
 
 export type Temperatura = {
-  data: Date;
+  data: string;
   temperatura: number;
 };
 
 export type Pluviometria = {
-  data: Date;
+  data: string;
   pluviometria: number;
 };
 
@@ -43,10 +43,10 @@ export class Cultura {
   @Prop({ type: Number, required: true }) // Pluviometria mínima como número
   pluviometria_min: number;
   
-  @Prop({ type: [{ data: Date, temperatura: Number }], required: true }) // Array de objetos de temperatura
+  @Prop({ type: [{ data: String, temperatura: Number }], required: true }) // Array de objetos de temperatura
   temperaturas: Temperatura[];
   
-  @Prop({ type: [{ data: Date, pluviometria: Number }], required: true }) // Array de objetos de pluviometria
+  @Prop({ type: [{ data: String, pluviometria: Number }], required: true }) // Array de objetos de pluviometria
   pluviometrias: Pluviometria[];
   
   @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
@@ -54,6 +54,9 @@ export class Cultura {
   
   @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
   alertasPluvi: Alerta[];
+
+  @Prop({ type: String, required: true }) // Mapeando a última atualização dos dados
+  lastUpdate: string;
 
   constructor(dto: CulturaDto) {
     this.ponto_cultivo = dto.ponto_cultivo;
@@ -66,6 +69,7 @@ export class Cultura {
     this.pluviometrias = dto.pluviometrias;
     this.alertasTemp = dto.alertasTemp;
     this.alertasPluvi = dto.alertasPluvi;
+    this.lastUpdate = dto.lastUpdate;
   }
 }
 
