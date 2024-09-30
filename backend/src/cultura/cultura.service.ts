@@ -72,7 +72,7 @@ export class CulturaService {
         }
 
         if (dia.prcp < cultura.pluviometria_min || dia.prcp > cultura.pluviometria_max) {
-          alertasPluv.push({ data: dia.date, temperatura: dia.tavg })
+          alertasPluv.push({ data: dia.date, temperatura: dia.prcp })
         }
       })
 
