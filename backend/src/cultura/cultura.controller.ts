@@ -38,11 +38,10 @@ export class CulturaController {
     return this.culturaService.findOne(id);
   }
 
-  @Put(':id/:rev')
+  @Put(':id/')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Atualiza uma cultura existente' }) // Descrição do endpoint
   @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) // Documenta o parâmetro 'id'
-  @ApiParam({ name: 'rev', description: 'Revisão do documento para controle de versionamento', type: String }) // Documenta o parâmetro 'rev'
   @ApiBody({ type: CulturaDto, description: 'Dados atualizados da cultura' }) // Documenta o corpo da requisição
   @ApiResponse({ status: 200, description: 'Cultura atualizada com sucesso.' }) // Resposta esperada
   @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
@@ -53,11 +52,10 @@ export class CulturaController {
     return this.culturaService.update(id, dto);
   }
 
-  @Delete(':id/:rev')
+  @Delete(':id/')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove uma cultura existente' }) // Descrição do endpoint
   @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) // Documenta o parâmetro 'id'
-  @ApiParam({ name: 'rev', description: 'Revisão do documento para controle de versionamento', type: String }) // Documenta o parâmetro 'rev'
   @ApiResponse({ status: 200, description: 'Cultura removida com sucesso.' }) // Resposta esperada
   @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
   remove(@Param('id') id: string): Promise<{deletedCount?: number;}> {
