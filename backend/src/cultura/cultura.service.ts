@@ -15,14 +15,16 @@ export class CulturaService {
 
   private readonly httpService = new HttpService();
 
-  constructor(@InjectModel(Cultura.name) private culturaModel: Model<Cultura>) {}
+  constructor(@InjectModel(Cultura.name) private culturaModel: Model<Cultura>) { }
 
   async create(data: CulturaDto): Promise<CulturaDocument> {
     try {
-      const clima = await this.getClima(data.ponto_cultivo.latitude, data.ponto_cultivo.longitude);
+      const clima = await this.getClima(data);
 
       data.temperaturas = clima.temperaturas;
       data.pluviometrias = clima.pluviometrias;
+      data.alertasTemp = clima.alertasTemp;
+      data.alertasPluvi = clima.alertasPluv;
       data.lastUpdate = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
 
       const culturaCreated = new this.culturaModel(data);
@@ -36,12 +38,12 @@ export class CulturaService {
     }
   }
 
-  private async getClima(latitude: string, longitude: string, startDate?: string, endDate?: string) {
+  private async getClima(cultura: CulturaDto, startDate?: string, endDate?: string) {
     const today = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
     const options = {
       method: 'GET',
-      url: `https://meteostat.p.rapidapi.com/point/daily?lat=${latitude}&lon=${longitude}&start=${startDate ?? today}&end=${endDate ?? today}`,
+      url: `https://meteostat.p.rapidapi.com/point/daily?lat=${cultura.ponto_cultivo.latitude}&lon=${cultura.ponto_cultivo.longitude}&start=${startDate ?? today}&end=${endDate ?? today}`,
       headers: {
         'X-RapidAPI-Key': process.env.METEOSTAT_API_KEY,
         'X-RapidAPI-Host': 'meteostat.p.rapidapi.com',
@@ -56,17 +58,25 @@ export class CulturaService {
         throw new ConflictException('Nenhum dado climático disponível para o intervalo fornecido');
       }
 
-      const temperaturas = data.data.map((dia: any) => ({
-        data: dia.date,
-        temperatura: dia.tavg,
-      }));
+      const temperaturas = []
+      const pluviometrias = []
+      const alertasTemp = []
+      const alertasPluv = []
 
-      const pluviometrias = data.data.map((dia: any) => ({
-        data: dia.date,
-        pluviometria: dia.prcp,
-      }));
+      data.data.map((dia: any) => {
+        temperaturas.push({ data: dia.date, temperatura: dia.tavg })
+        pluviometrias.push({ data: dia.date, pluviometria: dia.prcp })
 
-      return { temperaturas, pluviometrias };
+        if (dia.tavg < cultura.temperatura_min || dia.tavg > cultura.temperatura_max) {
+          alertasTemp.push({ data: dia.date, temperatura: dia.tavg })
+        }
+
+        if (dia.prcp < cultura.pluviometria_min || dia.prcp > cultura.pluviometria_max) {
+          alertasPluv.push({ data: dia.date, temperatura: dia.tavg })
+        }
+      })
+
+      return { temperaturas: temperaturas, pluviometrias: pluviometrias, alertasTemp: alertasTemp, alertasPluv: alertasPluv };
     } catch (error) {
       console.log(error);
       throw new ConflictException('Erro ao buscar dados climáticos');
@@ -91,8 +101,7 @@ export class CulturaService {
           console.log('startDate :' + startDate);
 
           const novosDados = await this.getClima(
-            cultura.ponto_cultivo.latitude,
-            cultura.ponto_cultivo.longitude,
+            cultura,
             startDate,
             hoje,
           );
@@ -112,6 +121,25 @@ export class CulturaService {
             );
             if (!existe) {
               cultura.pluviometrias.push(novaPluv);
+            }
+          });
+
+          novosDados.alertasPluv.forEach((novoAlerta) => {
+            const existe = cultura.alertasPluvi.some(
+              pluv => pluv.data === novoAlerta.data || novoAlerta.data < pluv.data,
+            );
+
+            if (!existe) {
+              cultura.alertasPluvi.push(novoAlerta)
+            }
+          })
+
+          novosDados.alertasTemp.forEach((novoAlerta) => {
+            const existe = cultura.alertasTemp.some(
+              temp => temp.data === novoAlerta.data || novoAlerta.data < temp.data,
+            );
+            if (!existe) {
+              cultura.alertasTemp.push(novoAlerta)
             }
           });
 

@@ -92,5 +92,5 @@ export class CulturaDto {
     description: 'Data da última atualização dos dados',
     example: '2024-09-27T12:00:00Z',
   })
-  lastUpdate: string;
+  lastUpdate?: string;
 }
