@@ -6,7 +6,9 @@ export type CulturaDocument = HydratedDocument<Cultura>;
 
 export type Temperatura = {
   data: string;
-  temperatura: number;
+  temperatura_media: number;
+  temperatura_max : number;
+  temperatura_min : number;
 };
 
 export type Pluviometria = {

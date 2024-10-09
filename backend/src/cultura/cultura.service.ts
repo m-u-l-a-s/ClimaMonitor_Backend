@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import * as nano from 'nano';
 import { CulturaDto } from './dto/cultura.dto';
-import { CulturaDocument, Cultura } from './entities/cultura.entity';
+import { CulturaDocument, Cultura, Temperatura, Pluviometria } from './entities/cultura.entity';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { addDays, format, parseISO } from 'date-fns';
@@ -64,8 +64,10 @@ export class CulturaService {
       const alertasPluv = []
 
       data.data.map((dia: any) => {
-        temperaturas.push({ data: dia.date, temperatura: dia.tavg })
-        pluviometrias.push({ data: dia.date, pluviometria: dia.prcp })
+        const temperatura : Temperatura = {data : dia.date,temperatura_max: dia.tmax, temperatura_media : dia.tavg, temperatura_min: dia.tmin}
+        const pluviometria : Pluviometria = {data : dia.date, pluviometria: dia.prcp}
+        temperaturas.push(temperatura)
+        pluviometrias.push(pluviometria)
 
         if (dia.tavg < cultura.temperatura_min || dia.tavg > cultura.temperatura_max) {
           alertasTemp.push({ data: dia.date, temperatura: dia.tavg })
