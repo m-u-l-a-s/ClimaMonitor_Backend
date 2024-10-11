@@ -45,7 +45,7 @@ export class Cultura {
   @Prop({ type: Number, required: true }) // Pluviometria mínima como número
   pluviometria_min: number;
   
-  @Prop({ type: [{ data: String, temperatura: Number }], required: true }) // Array de objetos de temperatura
+  @Prop({ type: [{ data: String, temperatura_media: Number, temperatura_min: Number, temperatura_max: Number }], required: true }) // Array de objetos de temperatura
   temperaturas: Temperatura[];
   
   @Prop({ type: [{ data: String, pluviometria: Number }], required: true }) // Array de objetos de pluviometria

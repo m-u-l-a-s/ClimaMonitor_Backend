@@ -64,17 +64,17 @@ export class CulturaService {
       const alertasPluv = []
 
       data.data.map((dia: any) => {
-        const temperatura : Temperatura = {data : dia.date,temperatura_max: dia.tmax, temperatura_media : dia.tavg, temperatura_min: dia.tmin}
-        const pluviometria : Pluviometria = {data : dia.date, pluviometria: dia.prcp}
+        const temperatura: Temperatura = { data: dia.date, temperatura_max: dia.tmax, temperatura_media: dia.tavg, temperatura_min: dia.tmin }
+        const pluviometria: Pluviometria = { data: dia.date, pluviometria: dia.prcp }
         temperaturas.push(temperatura)
         pluviometrias.push(pluviometria)
 
-        if (dia.tavg < cultura.temperatura_min || dia.tavg > cultura.temperatura_max) {
-          alertasTemp.push({ data: dia.date, temperatura: dia.tavg })
+        if (temperatura.temperatura_min < cultura.temperatura_min || temperatura.temperatura_max > cultura.temperatura_max) {
+          alertasTemp.push(temperatura)
         }
 
         if (dia.prcp < cultura.pluviometria_min || dia.prcp > cultura.pluviometria_max) {
-          alertasPluv.push({ data: dia.date, pluviometria: dia.prcp })
+          alertasPluv.push(pluviometria)
         }
       })
 
@@ -92,74 +92,25 @@ export class CulturaService {
       const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
       console.log('hoje :' + hoje);
 
-      for (const cultura of culturas) {
-        console.log('cultura.lastUpdate :' + cultura.lastUpdate);
-
-        const ultimaAtualizacao = cultura.lastUpdate ? format(new Date(cultura.lastUpdate), 'yyyy-MM-dd') : null;
-        console.log('ultimaAtualizacao :' + ultimaAtualizacao);
-
-        if (!ultimaAtualizacao || ultimaAtualizacao !== hoje) {
-          const startDate = ultimaAtualizacao ? format(addDays(parseISO(ultimaAtualizacao), 1), 'yyyy-MM-dd') : hoje;
-          console.log('startDate :' + startDate);
-
-          const novosDados = await this.getClima(
-            cultura,
-            startDate,
-            hoje,
-          );
-
-          novosDados.temperaturas.forEach((novaTemp) => {
-            const existe = cultura.temperaturas.some(
-              (temp) => temp.data === novaTemp.data || novaTemp.data < temp.data,
-            );
-            if (!existe) {
-              cultura.temperaturas.push(novaTemp);
-            }
-          });
-
-          novosDados.pluviometrias.forEach((novaPluv) => {
-            const existe = cultura.pluviometrias.some(
-              (pluv) => pluv.data === novaPluv.data || novaPluv.data < pluv.data,
-            );
-            if (!existe) {
-              cultura.pluviometrias.push(novaPluv);
-            }
-          });
-
-          novosDados.alertasPluv.forEach((novoAlerta) => {
-            const existe = cultura.alertasPluvi.some(
-              pluv => pluv.data === novoAlerta.data || novoAlerta.data < pluv.data,
-            );
-
-            if (!existe) {
-              cultura.alertasPluvi.push(novoAlerta)
-            }
-          })
-
-          novosDados.alertasTemp.forEach((novoAlerta) => {
-            const existe = cultura.alertasTemp.some(
-              temp => temp.data === novoAlerta.data || novoAlerta.data < temp.data,
-            );
-            if (!existe) {
-              cultura.alertasTemp.push(novoAlerta)
-            }
-          });
-
-          cultura.lastUpdate = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
-
-          await this.culturaModel.updateOne({ _id: cultura._id }, { $set: cultura });
-        }
+      for (let cultura of culturas) {
+        cultura = await this.UpdateTempAndPluvi(cultura, hoje)
       }
-
       return culturas;
-    } catch (error) {
+    }
+    catch (error) {
       throw new Error(error);
     }
   }
 
   async findOne(id: string): Promise<CulturaDocument> {
     try {
-      return this.culturaModel.findById(id).exec();
+      let cultura = await this.culturaModel.findById(id).exec();
+
+      const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+      console.log('hoje :' + hoje);
+      cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+      
+      return cultura
     } catch (error) {
       throw new Error(error);
     }
@@ -171,5 +122,66 @@ export class CulturaService {
 
   async update(id: string, data: CulturaDto): Promise<CulturaDocument> {
     return this.culturaModel.findByIdAndUpdate(id, data, { new: true }).exec();
+  }
+
+  async UpdateTempAndPluvi(cultura : CulturaDocument, hoje : string) {
+    console.log('cultura.lastUpdate :' + cultura.lastUpdate);
+
+    const ultimaAtualizacao = cultura.lastUpdate ? format(new Date(cultura.lastUpdate), 'yyyy-MM-dd') : null;
+    console.log('ultimaAtualizacao :' + ultimaAtualizacao);
+
+    if (!ultimaAtualizacao || ultimaAtualizacao !== hoje) {
+      const startDate = ultimaAtualizacao ? format(addDays(parseISO(ultimaAtualizacao), 1), 'yyyy-MM-dd') : hoje;
+      console.log('startDate :' + startDate);
+
+      const novosDados = await this.getClima(
+        cultura,
+        startDate,
+        hoje
+      );
+
+      novosDados.temperaturas.forEach((novaTemp) => {
+        const existe = cultura.temperaturas.some(
+          (temp) => temp.data === novaTemp.data || novaTemp.data < temp.data,
+        );
+        if (!existe) {
+          cultura.temperaturas.push(novaTemp);
+        }
+      });
+
+      novosDados.pluviometrias.forEach((novaPluv) => {
+        const existe = cultura.pluviometrias.some(
+          (pluv) => pluv.data === novaPluv.data || novaPluv.data < pluv.data,
+        );
+        if (!existe) {
+          cultura.pluviometrias.push(novaPluv);
+        }
+      });
+
+      novosDados.alertasPluv.forEach((novoAlerta) => {
+        const existe = cultura.alertasPluvi.some(
+          pluv => pluv.data === novoAlerta.data || novoAlerta.data < pluv.data,
+        );
+
+        if (!existe) {
+          cultura.alertasPluvi.push(novoAlerta)
+        }
+      })
+
+      novosDados.alertasTemp.forEach((novoAlerta) => {
+        const existe = cultura.alertasTemp.some(
+          temp => temp.data === novoAlerta.data || novoAlerta.data < temp.data,
+        );
+        if (!existe) {
+          cultura.alertasTemp.push(novoAlerta)
+        }
+      });
+
+      cultura.lastUpdate = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
+
+      await this.culturaModel.updateOne({ _id: cultura._id }, { $set: cultura });
+
+      return cultura
+    }
   }
 }
