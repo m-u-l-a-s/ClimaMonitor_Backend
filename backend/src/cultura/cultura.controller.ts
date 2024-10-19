@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, Put, Query } from '@nestjs/common';
 import { CulturaService } from './cultura.service';
 import { CulturaDto } from './dto/cultura.dto';
 import { CulturaDocument, Cultura } from './entities/cultura.entity';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody } from '@nestjs/swagger';
 import * as nano from 'nano';
+import { HttpStatusCode } from 'axios';
 
 @ApiTags('Cultura') // Tag para agrupar endpoints no Swagger
 @Controller('cultura')
@@ -28,15 +29,15 @@ export class CulturaController {
     return this.culturaService.findAll();
   }
 
-  @Get(':id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Retorna uma cultura específica por ID' }) // Descrição do endpoint
-  @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) // Documenta o parâmetro 'id'
-  @ApiResponse({ status: 200, description: 'Cultura retornada com sucesso.', type: Cultura }) // Resposta esperada
-  @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
-  findOne(@Param('id') id: string): Promise<CulturaDocument> {
-    return this.culturaService.findOne(id);
-  }
+  // @Get(':id')
+  // @HttpCode(HttpStatus.OK)
+  // @ApiOperation({ summary: 'Retorna uma cultura específica por ID' }) // Descrição do endpoint
+  // @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) // Documenta o parâmetro 'id'
+  // @ApiResponse({ status: 200, description: 'Cultura retornada com sucesso.', type: Cultura }) // Resposta esperada
+  // @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
+  // findOne(@Param('id') id: string): Promise<CulturaDocument> {
+  //   return this.culturaService.findOne(id);
+  // }
 
   @Put(':id/')
   @HttpCode(HttpStatus.OK)
@@ -58,7 +59,18 @@ export class CulturaController {
   @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) // Documenta o parâmetro 'id'
   @ApiResponse({ status: 200, description: 'Cultura removida com sucesso.' }) // Resposta esperada
   @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
-  remove(@Param('id') id: string): Promise<{deletedCount?: number;}> {
+  remove(@Param('id') id: string): Promise<HttpStatusCode> {
     return this.culturaService.remove(id);
   }
+
+  @Get("/sync")
+  async pullChanges(@Query('lastPulledAt') lastPulledAt: string) {
+    return this.culturaService.pull(lastPulledAt);
+  }
+
+  // Aplica as mudanças vindas do app
+  // @Post("/sync")
+  // async pushChanges(@Body() changes: any) {
+  //   return this.culturaService.applyChanges(changes);
+  // }
 }

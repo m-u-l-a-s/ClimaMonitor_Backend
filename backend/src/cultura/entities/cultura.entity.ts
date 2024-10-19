@@ -60,6 +60,12 @@ export class Cultura {
   @Prop({ type: String, required: true }) // Mapeando a última atualização dos dados
   lastUpdate: string;
 
+  @Prop({ type: String, required: true})
+  createdAt: string
+
+  @Prop({ type: String, required: true})
+  deletedAt: string
+
   constructor(dto: CulturaDto) {
     this.ponto_cultivo = dto.ponto_cultivo;
     this.nome_cultivo = dto.nome_cultivo;
@@ -72,6 +78,8 @@ export class Cultura {
     this.alertasTemp = dto.alertasTemp;
     this.alertasPluvi = dto.alertasPluvi;
     this.lastUpdate = dto.lastUpdate;
+    this.createdAt = dto.createdAt;
+    this.deletedAt = dto.deletedAt;
   }
 }
 
