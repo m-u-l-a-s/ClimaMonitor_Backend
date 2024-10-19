@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus
 import { CulturaService } from './cultura.service';
 import { CulturaDto } from './dto/cultura.dto';
 import { CulturaDocument, Cultura } from './entities/cultura.entity';
-import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
 import * as nano from 'nano';
 import { HttpStatusCode } from 'axios';
 
@@ -31,10 +31,10 @@ export class CulturaController {
 
   // @Get(':id')
   // @HttpCode(HttpStatus.OK)
-  // @ApiOperation({ summary: 'Retorna uma cultura específica por ID' }) // Descrição do endpoint
-  // @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) // Documenta o parâmetro 'id'
-  // @ApiResponse({ status: 200, description: 'Cultura retornada com sucesso.', type: Cultura }) // Resposta esperada
-  // @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
+  // @ApiOperation({ summary: 'Retorna uma cultura específica por ID' }) 
+  // @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) 
+  // @ApiResponse({ status: 200, description: 'Cultura retornada com sucesso.', type: Cultura })
+  // @ApiResponse({ status: 404, description: 'Cultura não encontrada.' })
   // findOne(@Param('id') id: string): Promise<CulturaDocument> {
   //   return this.culturaService.findOne(id);
   // }
@@ -63,8 +63,9 @@ export class CulturaController {
     return this.culturaService.remove(id);
   }
 
+  @ApiQuery({ name : "lastPulledAt", required: false})
   @Get("/sync")
-  async pullChanges(@Query('lastPulledAt') lastPulledAt: string) {
+  async pullChanges(@Query('lastPulledAt') lastPulledAt?: number) {
     return this.culturaService.pull(lastPulledAt);
   }
 

@@ -93,6 +93,22 @@ export class CulturaDto {
     example: '2024-09-27T12:00:00Z',
   })
   lastUpdate?: string;
+
+  @ApiProperty({
+    description: 'Data da criação dos dados',
+    example: '2024-09-27T12:00:00Z',
+  })
   createdAt?: string;
+  
+  @ApiProperty({
+    description: 'Data da remoção dos dados',
+    example: '2024-09-27T12:00:00Z',
+  })
   deletedAt?: string;
+
+  @ApiProperty({
+    description: 'identificação no watermelon',
+    example: '2024-09-27T12:00:00Z',
+  })
+  id: string;
 }
