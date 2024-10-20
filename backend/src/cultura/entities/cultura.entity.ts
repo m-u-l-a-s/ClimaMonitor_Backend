@@ -21,9 +21,6 @@ export type Localização = {
   longitude: string;
 };
 
-export type Alerta = {
-  [date: string]: number;
-};
 
 @Schema()
 export class Cultura {
@@ -52,13 +49,22 @@ export class Cultura {
   pluviometrias: Pluviometria[];
   
   @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
-  alertasTemp: Alerta[];
+  alertasTemp: Temperatura[];
   
   @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
-  alertasPluvi: Alerta[];
+  alertasPluvi: Pluviometria[];
 
   @Prop({ type: String, required: true }) // Mapeando a última atualização dos dados
   lastUpdate: string;
+
+  @Prop({ type: String, required: false})
+  createdAt: string
+
+  @Prop({ type: String, required: false})
+  deletedAt: string
+
+  @Prop( { type: String, required: false, unique: true})
+  id: string
 
   constructor(dto: CulturaDto) {
     this.ponto_cultivo = dto.ponto_cultivo;
@@ -72,6 +78,9 @@ export class Cultura {
     this.alertasTemp = dto.alertasTemp;
     this.alertasPluvi = dto.alertasPluvi;
     this.lastUpdate = dto.lastUpdate;
+    this.createdAt = dto.createdAt;
+    this.deletedAt = dto.deletedAt;
+    this.id = dto.id
   }
 }
 

@@ -1,6 +1,6 @@
 import { IsString, Length, IsNumber, IsArray, ValidateNested, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { Localização, Temperatura, Pluviometria, Alerta } from '../entities/cultura.entity';
+import { Localização, Temperatura, Pluviometria } from '../entities/cultura.entity';
 
 export class CulturaDto {
   @ApiProperty({
@@ -78,7 +78,7 @@ export class CulturaDto {
     example: [{ '2024-01-01': 1 }, { '2024-01-02': 0 }],
   })
   @IsArray()
-  alertasTemp: Alerta[];
+  alertasTemp: Temperatura[];
 
   @ApiProperty({
     description: 'Alertas de pluviometria para datas específicas',
@@ -86,11 +86,29 @@ export class CulturaDto {
     example: [{ '2024-01-01': 1 }, { '2024-01-02': 0 }],
   })
   @IsArray()
-  alertasPluvi: Alerta[];
+  alertasPluvi: Pluviometria[];
 
   @ApiProperty({
     description: 'Data da última atualização dos dados',
     example: '2024-09-27T12:00:00Z',
   })
   lastUpdate?: string;
+
+  @ApiProperty({
+    description: 'Data da criação dos dados',
+    example: '2024-09-27T12:00:00Z',
+  })
+  createdAt: string;
+  
+  @ApiProperty({
+    description: 'Data da remoção dos dados',
+    example: '2024-09-27T12:00:00Z',
+  })
+  deletedAt?: string;
+
+  @ApiProperty({
+    description: 'identificação no watermelon',
+    example: '2024-09-27T12:00:00Z',
+  })
+  id: string;
 }
