@@ -3,7 +3,6 @@ import { CulturaService } from './cultura.service';
 import { CulturaDto } from './dto/cultura.dto';
 import { CulturaDocument, Cultura } from './entities/cultura.entity';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
-import * as nano from 'nano';
 import { HttpStatusCode } from 'axios';
 
 @ApiTags('Cultura') // Tag para agrupar endpoints no Swagger
@@ -63,15 +62,14 @@ export class CulturaController {
     return this.culturaService.remove(id);
   }
 
-  @ApiQuery({ name : "lastPulledAt", required: false})
+  @ApiQuery({ name: "lastPulledAt", required: false })
   @Get("/sync")
   async pullChanges(@Query('lastPulledAt') lastPulledAt?: number) {
     return this.culturaService.pull(lastPulledAt);
   }
 
-  // Aplica as mudanças vindas do app
-  // @Post("/sync")
-  // async pushChanges(@Body() changes: any) {
-  //   return this.culturaService.applyChanges(changes);
-  // }
+  @Post("/sync")
+  async pushChanges(@Body() changes: any) {
+    return this.culturaService.push(changes);
+  }
 }

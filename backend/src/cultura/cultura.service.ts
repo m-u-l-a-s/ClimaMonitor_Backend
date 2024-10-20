@@ -2,7 +2,7 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import * as nano from 'nano';
 import { CulturaDto } from './dto/cultura.dto';
 import { CulturaDocument, Cultura, Temperatura, Pluviometria } from './entities/cultura.entity';
-import { firstValueFrom, retry, timestamp } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { addDays, format, parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -26,6 +26,8 @@ export class CulturaService {
   }
 
   async create(data: CulturaDto): Promise<CulturaDocument> {
+    const filter = { id: data.id }
+    const options = { upsert: true, new: true }
     try {
       const clima = await this.getClima(data);
 
@@ -34,17 +36,13 @@ export class CulturaService {
       data.alertasTemp = clima.alertasTemp;
       data.alertasPluvi = clima.alertasPluv;
       data.lastUpdate = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
-      data.createdAt = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
-      data.deletedAt = "";
 
-      const culturaCreated = new this.culturaModel(data);
+      await this.culturaModel.findOneAndUpdate(filter, data, options)
 
-      return culturaCreated.save();
     } catch (error) {
       data.temperaturas = [];
       data.pluviometrias = [];
-      const culturaCreated = new this.culturaModel(data);
-      return culturaCreated.save();
+      return this.culturaModel.findOneAndUpdate(filter, data, options);
     }
   }
 
@@ -130,7 +128,7 @@ export class CulturaService {
   //   }
   // }
 
-  async remove(id: string): Promise<HttpStatusCode> {
+  async remove(id: String): Promise<HttpStatusCode> {
     try {
       const cultura = await this.culturaModel.findById({ _id: id }).exec();
       cultura.deletedAt = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
@@ -149,6 +147,66 @@ export class CulturaService {
     return this.culturaModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 
+  async push(changes) {
+    const { created, deleted, updated } = changes.Cultura
+    for (const [name, model] of Object.entries(this.models)) {
+
+      changes[name].created.forEach(async doc => {
+        const ponto_cultivo = JSON.parse(doc.ponto_cultivo)
+
+        const data: CulturaDto = {
+          id: doc.id,
+          ponto_cultivo: { latitude: ponto_cultivo.latitude, longitude: ponto_cultivo.longitude },
+          nome_cultivo: doc.nome_cultivo,
+          temperatura_max: doc.temperatura_max,
+          temperatura_min: doc.temperatura_min,
+          pluviometria_max: doc.pluviometria_max,
+          pluviometria_min: doc.pluviometria_min,
+          alertasPluvi: [],
+          alertasTemp: [],
+          pluviometrias: [],
+          temperaturas: [],
+          createdAt: doc.createdAt,
+          deletedAt: doc.deletedAt,
+          lastUpdate: doc.lastUpdate
+        }
+        await this.create(data)
+      })
+
+      changes[name].updated.forEach(async doc => {
+        const ponto_cultivo = JSON.parse(doc.ponto_cultivo)
+        const temperaturas = JSON.parse(doc.temperaturas)
+        const pluviometrias = JSON.parse(doc.pluviometrias)
+        const alertasPluvi = JSON.parse(doc.alertasPluvi)
+        const alertasTemp = JSON.parse(doc.alertasTemp)
+
+        const data: CulturaDto = {
+          id: doc.id,
+          ponto_cultivo: ponto_cultivo,
+          nome_cultivo: doc.nome_cultivo,
+          temperatura_max: doc.temperatura_max,
+          temperatura_min: doc.temperatura_min,
+          pluviometria_max: doc.pluviometria_max,
+          pluviometria_min: doc.pluviometria_min,
+          alertasPluvi: alertasPluvi,
+          alertasTemp: alertasTemp,
+          pluviometrias: pluviometrias,
+          temperaturas: temperaturas,
+          createdAt: doc.createdAt,
+          deletedAt: doc.deletedAt,
+          lastUpdate: doc.lastUpdate
+        }
+
+        await this.update(doc._id, data)
+      })
+
+      changes[name].deleted.forEach(async id => {
+        await this.remove(id)
+      })
+    }
+    return HttpStatusCode.NoContent
+  }
+
   async pull(last_pulled_at?: number) {
     const timestamp = moment().unix();
     const changes = {}
@@ -162,10 +220,14 @@ export class CulturaService {
         };
       }
     } else {
-
       const lastPulledAtDate = moment.unix(last_pulled_at);
 
-      console.log()
+      // console.log("Moment: " + lastPulledAtDate)
+      // console.log(`Date: ${lastPulledAtDate.toDate().toISOString()}`)
+      // const timezone = formatInTimeZone(lastPulledAtDate.toDate(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX")
+      // console.log(`timezone: ${timezone}`);
+      // console.log(`ISO: ${parseISO(timezone).toISOString()}`)
+
 
       for (const [name, model] of Object.entries(this.models)) {
         changes[name] = {
@@ -180,14 +242,23 @@ export class CulturaService {
   }
 
   async getCreatedCultura(last_pulled_at: Date) {
-    const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX")
-    const parsedDate = parseISO(formatDate).toISOString();
+    const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
+    const parsedDate = parseISO(formatDate).toISOString()
+    const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
-    console.log(parsedDate)
+    // console.log(parsedDate)
 
-    const culturas = await this.culturaModel.find({ createdAt: { $gt: `${parsedDate}` } }).lean().exec()
+    const culturas = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` } }).exec()
 
-    const result = culturas.filter(doc => !doc.deletedAt || doc.deletedAt === "")
+    for (let cultura of culturas) {
+      if (cultura.deletedAt == "") {
+        cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+      }
+    }
+
+    const culturas2 = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` } }).lean().exec()
+
+    const result = culturas2.filter(doc => !doc.deletedAt || doc.deletedAt === "")
       .map(doc => ({
         _id: doc._id,
         nome_cultivo: doc.nome_cultivo,
@@ -209,9 +280,18 @@ export class CulturaService {
   }
 
   async getAllCreatedCultura() {
-    const culturas = await this.culturaModel.find().lean().exec();
+    const culturas = await this.culturaModel.find().exec();
+    const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
-    const result = culturas
+    for (let cultura of culturas) {
+      if (cultura.deletedAt == "") {
+        cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+      }
+    }
+
+    const culturas2 = await this.culturaModel.find().lean().exec();
+
+    const result = culturas2
       .filter(doc => !doc.deletedAt || doc.deletedAt === "")
       .map(doc => ({
         _id: doc._id,
@@ -235,16 +315,29 @@ export class CulturaService {
   }
 
   async getUpdatedCultura(last_pulled_at: Date) {
-    const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX")
+    const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
+    const parsedDate = parseISO(formatDate).toISOString()
 
-    const parsedDate = parseISO(formatDate);
+    const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
-    const culturas = await this.culturaModel.find({ createdAt: { $lt: `${parsedDate}` }, lastUpdate: { $gt: `${parsedDate}` } }).lean().exec()
+    const culturas = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` } }).exec()
 
-    const response = culturas
+    for (let cultura of culturas) {
+      if (cultura.deletedAt == "") {
+        console.log("Cultura: " + cultura)
+        cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+      }
+    }
+
+    console.log("Data: " + formatDate)
+
+    const culturas2 = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` } }).lean().exec()
+
+    console.log(`Cultura 2: ${culturas2}`)
+
+    const response = culturas2
       .filter(doc => !doc.deletedAt || doc.deletedAt === "")
       .map(doc => ({
-        _id: doc._id,
         nome_cultivo: doc.nome_cultivo,
         ponto_cultivo: JSON.stringify(doc.ponto_cultivo),
         temperatura_max: doc.temperatura_max,
@@ -258,15 +351,16 @@ export class CulturaService {
         lastUpdate: doc.lastUpdate,
         createdAt: doc.createdAt,
         deletedAt: "",
-        id: doc.id
+        id: doc.id,
+        _id: doc._id
       }));
 
-      return response;
+    return response;
   }
 
   async getDeletedCulturas(last_pulled_at: Date): Promise<String[]> {
-    const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX")
-    const parsedDate = parseISO(formatDate).toISOString();
+    const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
+    const parsedDate = parseISO(formatDate).toISOString()
 
     return await this.culturaModel.find({
       deletedAt: { $gt: `${parsedDate}` },
@@ -275,14 +369,14 @@ export class CulturaService {
       .select('_id')
       .lean()
       .exec()
-      .then(results => results.map(doc => doc.nome_cultivo));
+      .then(results => results.map(doc => doc.id));
   }
 
   async UpdateTempAndPluvi(cultura: CulturaDocument, hoje: string) {
-    console.log('cultura.lastUpdate :' + cultura.lastUpdate);
+    // console.log('cultura.lastUpdate :' + cultura.lastUpdate);
 
     const ultimaAtualizacao = cultura.lastUpdate ? format(new Date(cultura.lastUpdate), 'yyyy-MM-dd') : null;
-    console.log('ultimaAtualizacao :' + ultimaAtualizacao);
+    // console.log('ultimaAtualizacao :' + ultimaAtualizacao);
 
     if (!ultimaAtualizacao || ultimaAtualizacao !== hoje) {
       const startDate = ultimaAtualizacao ? format(addDays(parseISO(ultimaAtualizacao), 1), 'yyyy-MM-dd') : hoje;
@@ -337,5 +431,5 @@ export class CulturaService {
 
       return cultura
     }
-  }
+  };
 }
