@@ -7,10 +7,14 @@ import { UserModule } from './user/user.module';
 import { User } from './user/entities/user.entity';
 import { CulturaModule } from './cultura/cultura.module';
 import { MongooseModule } from '@nestjs/mongoose';
-
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
+    JwtModule.register({
+      secret: 'supersecretkey',
+      signOptions: { expiresIn: '600s' },
+    }),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       type: 'mariadb',
@@ -25,7 +29,7 @@ import { MongooseModule } from '@nestjs/mongoose';
     }),
     UserModule,
     CulturaModule,
-    MongooseModule.forRoot(process.env.MONGOOSE_URL)
+    MongooseModule.forRoot(process.env.MONGOOSE_URL),
   ],
   controllers: [AppController],
   providers: [AppService],
