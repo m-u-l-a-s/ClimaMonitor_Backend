@@ -10,10 +10,12 @@ import {
   HttpCode,
   HttpStatus,
   ConflictException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Controller('users')
 export class UserController {
@@ -71,5 +73,19 @@ export class UserController {
     }
     await this.userService.remove(id);
     return { message: 'User removed successfully' };
+  }
+
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginDto: LoginDto) {
+    const { username, password } = loginDto;
+    const result = await this.userService.login(username, password);
+    if ('error' in result) {
+      if (result.error === 'Usuário inválido' || result.error === 'Senha incorreta') {
+        throw new UnauthorizedException(result.error);
+      }
+      throw new ConflictException(result.error);
+    }
+    return result;
   }
 }
