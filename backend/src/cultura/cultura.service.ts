@@ -103,6 +103,7 @@ export class CulturaService {
       for (let cultura of culturas) {
         if (cultura.deletedAt == "") {
           cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+          setTimeout(() => console.log("Requisição realizada", 3000))
         }
       }
       return culturas;
@@ -211,6 +212,8 @@ export class CulturaService {
     const timestamp = moment().unix();
     const changes = {}
 
+    await this.findAll();
+
     if (!last_pulled_at) {
       for (const [name, model] of Object.entries(this.models)) {
         changes[name] = {
@@ -243,18 +246,18 @@ export class CulturaService {
 
   async getCreatedCultura(last_pulled_at: Date) {
     const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
-    const parsedDate = parseISO(formatDate).toISOString()
-    const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+    // const parsedDate = parseISO(formatDate).toISOString()
+    // const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
     // console.log(parsedDate)
 
-    const culturas = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` } }).exec()
+    // const culturas = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` } }).exec()
 
-    for (let cultura of culturas) {
-      if (cultura.deletedAt == "") {
-        cultura = await this.UpdateTempAndPluvi(cultura, hoje)
-      }
-    }
+    // for (let cultura of culturas) {
+    //   if (cultura.deletedAt == "") {
+    //     cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+    //   }
+    // }
 
     const culturas2 = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` } }).lean().exec()
 
@@ -280,14 +283,14 @@ export class CulturaService {
   }
 
   async getAllCreatedCultura() {
-    const culturas = await this.culturaModel.find().exec();
-    const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+    // const culturas = await this.culturaModel.find().exec();
+    // const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
-    for (let cultura of culturas) {
-      if (cultura.deletedAt == "") {
-        cultura = await this.UpdateTempAndPluvi(cultura, hoje)
-      }
-    }
+    // for (let cultura of culturas) {
+    //   if (cultura.deletedAt == "") {
+    //     cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+    //   }
+    // }
 
     const culturas2 = await this.culturaModel.find().lean().exec();
 
@@ -316,18 +319,18 @@ export class CulturaService {
 
   async getUpdatedCultura(last_pulled_at: Date) {
     const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
-    const parsedDate = parseISO(formatDate).toISOString()
+    // const parsedDate = parseISO(formatDate).toISOString()
 
-    const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+    // const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
-    const culturas = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` } }).exec()
+    // const culturas = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` } }).exec()
 
-    for (let cultura of culturas) {
-      if (cultura.deletedAt == "") {
-        console.log("Cultura: " + cultura)
-        cultura = await this.UpdateTempAndPluvi(cultura, hoje)
-      }
-    }
+    // for (let cultura of culturas) {
+    //   if (cultura.deletedAt == "") {
+    //     console.log("Cultura: " + cultura)
+    //     cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+    //   }
+    // }
 
     console.log("Data: " + formatDate)
 
@@ -373,10 +376,10 @@ export class CulturaService {
   }
 
   async UpdateTempAndPluvi(cultura: CulturaDocument, hoje: string) {
-    // console.log('cultura.lastUpdate :' + cultura.lastUpdate);
+    console.log('cultura.lastUpdate :' + cultura.lastUpdate);
 
     const ultimaAtualizacao = cultura.lastUpdate ? format(new Date(cultura.lastUpdate), 'yyyy-MM-dd') : null;
-    // console.log('ultimaAtualizacao :' + ultimaAtualizacao);
+    console.log('ultimaAtualizacao :' + ultimaAtualizacao);
 
     if (!ultimaAtualizacao || ultimaAtualizacao !== hoje) {
       const startDate = ultimaAtualizacao ? format(addDays(parseISO(ultimaAtualizacao), 1), 'yyyy-MM-dd') : hoje;
