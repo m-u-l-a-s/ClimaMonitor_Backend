@@ -130,7 +130,7 @@ export class CulturaService {
 
   async remove(id: String): Promise<HttpStatusCode> {
     try {
-      const cultura = await this.culturaModel.findById({ _id: id }).exec();
+      const cultura = await this.culturaModel.findOne({id : id}).exec()
       cultura.deletedAt = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
       cultura.temperaturas = []
       cultura.pluviometrias = []
@@ -149,6 +149,8 @@ export class CulturaService {
 
   async push(changes) {
     const { created, deleted, updated } = changes.Cultura
+
+    console.log("Deletados: "+deleted)
     for (const [name, model] of Object.entries(this.models)) {
 
       changes[name].created.forEach(async doc => {
@@ -324,16 +326,16 @@ export class CulturaService {
 
     for (let cultura of culturas) {
       if (cultura.deletedAt == "") {
-        console.log("Cultura: " + cultura)
+        // console.log("Cultura: " + cultura)
         cultura = await this.UpdateTempAndPluvi(cultura, hoje)
       }
     }
 
-    console.log("Data: " + formatDate)
+    // console.log("Data: " + formatDate)
 
     const culturas2 = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` } }).lean().exec()
 
-    console.log(`Cultura 2: ${culturas2}`)
+    // console.log(`Cultura 2: ${culturas2}`)
 
     const response = culturas2
       .filter(doc => !doc.deletedAt || doc.deletedAt === "")
@@ -380,7 +382,7 @@ export class CulturaService {
 
     if (!ultimaAtualizacao || ultimaAtualizacao !== hoje) {
       const startDate = ultimaAtualizacao ? format(addDays(parseISO(ultimaAtualizacao), 1), 'yyyy-MM-dd') : hoje;
-      console.log('startDate :' + startDate);
+      // console.log('startDate :' + startDate);
 
       const novosDados = await this.getClima(
         cultura,
