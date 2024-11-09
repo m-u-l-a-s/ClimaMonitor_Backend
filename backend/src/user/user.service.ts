@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
@@ -26,6 +26,14 @@ export class UserService {
   }
 
   async create(user: Partial<User>): Promise<User> {
+    const existingUser = await this.userRepository.findOne({
+      where: { username: user.username },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('Username already exists');
+    }
+
     const hashedPassword = await bcrypt.hash(user.password, 10);
     const newUser = this.userRepository.create({
       ...user,
@@ -34,9 +42,23 @@ export class UserService {
     return this.userRepository.save(newUser);
   }
 
-  async update(id: number, user: Partial<User>): Promise<User> {
+  async update(id: number, user: Partial<User>): Promise<{ user?: User; error?: string }> {
+    const existingUser = await this.userRepository.findOneBy({ id });
+
+    if (!existingUser) {
+      return { error: 'User not found' };
+    }
+
+    if (user.username && user.username !== existingUser.username) {
+      const usernameExists = await this.userRepository.findOneBy({ username: user.username });
+      if (usernameExists) {
+        return { error: 'Username already exists' };
+      }
+    }
+
     await this.userRepository.update(id, user);
-    return this.userRepository.findOneBy({ id });
+    const updatedUser = await this.userRepository.findOneBy({ id });
+    return { user: updatedUser };
   }
 
   async remove(id: number): Promise<void> {
@@ -56,7 +78,11 @@ export class UserService {
     }
 
     const payload = { username: user.username, sub: user.id };
-    const token = this.jwtService.sign(payload);
-    return { token };
+    const token = this.jwtService.sign(payload, { expiresIn: '1h' });
+
+    return {
+      token,
+      userId: user.id,
+    };
   }
 }
