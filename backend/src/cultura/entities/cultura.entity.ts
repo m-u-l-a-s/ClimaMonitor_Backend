@@ -54,7 +54,7 @@ export class Cultura {
   @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
   alertasPluvi: Pluviometria[];
 
-  @Prop({ type: String, required: true }) // Mapeando a última atualização dos dados
+  @Prop({ type: String, required: true })
   lastUpdate: string;
 
   @Prop({ type: String, required: false})
@@ -65,6 +65,9 @@ export class Cultura {
 
   @Prop( { type: String, required: false, unique: true})
   id: string
+
+  @Prop( {type: String, required: true})
+  userId : string
 
   constructor(dto: CulturaDto) {
     this.ponto_cultivo = dto.ponto_cultivo;

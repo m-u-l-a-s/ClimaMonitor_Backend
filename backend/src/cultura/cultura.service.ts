@@ -113,6 +113,22 @@ export class CulturaService {
     }
   }
 
+  async findAllByUserId(userId: String): Promise<CulturaDocument[]> {
+    try {
+      const culturas = await this.culturaModel.find({ userId: userId }).exec();
+
+      const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+      for (let cultura of culturas) {
+        if (cultura.deletedAt == "") {
+          cultura = await this.UpdateTempAndPluvi(cultura, hoje)
+        }
+      }
+      return culturas;
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
+
   async findOne(id: string): Promise<CulturaDocument> {
     try {
       const cultura = await this.culturaModel.findById(id).exec();
@@ -131,7 +147,7 @@ export class CulturaService {
 
   async remove(id: String): Promise<HttpStatusCode> {
     try {
-      const cultura = await this.culturaModel.findOne({id : id}).exec()
+      const cultura = await this.culturaModel.findOne({ id: id }).exec()
       cultura.deletedAt = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
       cultura.temperaturas = []
       cultura.pluviometrias = []
@@ -151,7 +167,7 @@ export class CulturaService {
   async push(changes) {
     const { created, deleted, updated } = changes.Cultura
 
-    console.log("Deletados: "+deleted)
+    console.log("Deletados: " + deleted)
     for (const [name, model] of Object.entries(this.models)) {
 
       changes[name].created.forEach(async doc => {
@@ -159,6 +175,7 @@ export class CulturaService {
 
         const data: CulturaDto = {
           id: doc.id,
+          userId: doc.userId,
           ponto_cultivo: { latitude: ponto_cultivo.latitude, longitude: ponto_cultivo.longitude },
           nome_cultivo: doc.nome_cultivo,
           temperatura_max: doc.temperatura_max,
@@ -185,6 +202,7 @@ export class CulturaService {
 
         const data: CulturaDto = {
           id: doc.id,
+          userId: doc.userId,
           ponto_cultivo: ponto_cultivo,
           nome_cultivo: doc.nome_cultivo,
           temperatura_max: doc.temperatura_max,

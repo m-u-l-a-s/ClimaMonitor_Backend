@@ -31,9 +31,10 @@ export class UserController {
     return users;
   }
 
+
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async findOne(@Param('id') id: number) {
+  async findOne(@Param('id') id: string) {
     const user = await this.userService.findOne(id);
     if (!user) {
       return { message: `User with ID ${id} not found` };
@@ -53,7 +54,7 @@ export class UserController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     const result = await this.userService.update(id, updateUserDto);
     if ('error' in result) {
       if (result.error === 'User not found') {
@@ -66,7 +67,7 @@ export class UserController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(@Param('id') id: number) {
+  async remove(@Param('id') id: string) {
     const user = await this.userService.findOne(id);
     if (!user) {
       return { message: `User with ID ${id} not found` };

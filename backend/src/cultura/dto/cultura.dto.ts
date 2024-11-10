@@ -111,4 +111,10 @@ export class CulturaDto {
     example: '2024-09-27T12:00:00Z',
   })
   id: string;
+
+  @ApiProperty({
+    description: 'Identificação do usuário',
+    example: '2024-09-27T12:00:00Z',
+  })
+  userId: string;
 }
