@@ -228,7 +228,7 @@ export class CulturaService {
     return HttpStatusCode.NoContent
   }
 
-  async pull(last_pulled_at?: number) {
+  async pull(userId: string, last_pulled_at?: number ) {
     const timestamp = moment().unix();
     const changes = {}
 
@@ -237,7 +237,7 @@ export class CulturaService {
     if (!last_pulled_at) {
       for (const [name, model] of Object.entries(this.models)) {
         changes[name] = {
-          created: await this.getAllCreatedCultura(),
+          created: await this.findAllByUserId(userId),
           updated: [],
           deleted: []
         };
@@ -254,9 +254,9 @@ export class CulturaService {
 
       for (const [name, model] of Object.entries(this.models)) {
         changes[name] = {
-          created: await this.getCreatedCultura(lastPulledAtDate.toDate()),
-          updated: await this.getUpdatedCultura(lastPulledAtDate.toDate()),
-          deleted: await this.getDeletedCulturas(lastPulledAtDate.toDate())
+          created: await this.getCreatedCultura(lastPulledAtDate.toDate(), userId),
+          updated: await this.getUpdatedCultura(lastPulledAtDate.toDate(), userId),
+          deleted: await this.getDeletedCulturas(lastPulledAtDate.toDate(), userId)
         };
       }
     }
@@ -264,14 +264,14 @@ export class CulturaService {
     return { changes, timestamp }
   }
 
-  async getCreatedCultura(last_pulled_at: Date) {
+  async getCreatedCultura(last_pulled_at: Date, userId: string) {
     const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
     const parsedDate = parseISO(formatDate).toISOString()
     const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
     console.log(parsedDate)
 
-    const culturas = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` } }).exec()
+    const culturas = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` } , userId: userId}).exec()
 
     for (let cultura of culturas) {
       if (cultura.deletedAt == "") {
@@ -279,7 +279,7 @@ export class CulturaService {
       }
     }
 
-    const culturas2 = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` } }).lean().exec()
+    const culturas2 = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` }, userId: userId }).lean().exec()
 
     const result = culturas2.filter(doc => !doc.deletedAt || doc.deletedAt === "")
       .map(doc => ({
@@ -337,13 +337,13 @@ export class CulturaService {
     return result;
   }
 
-  async getUpdatedCultura(last_pulled_at: Date) {
+  async getUpdatedCultura(last_pulled_at: Date, userId: string) {
     const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
     const parsedDate = parseISO(formatDate).toISOString()
 
     const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
-    const culturas = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` } }).exec()
+    const culturas = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId }).exec()
 
     for (let cultura of culturas) {
       if (cultura.deletedAt == "") {
@@ -353,7 +353,7 @@ export class CulturaService {
 
     // console.log("Data: " + formatDate)
 
-    const culturas2 = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` } }).lean().exec()
+    const culturas2 = await this.culturaModel.find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId }).lean().exec()
 
     // console.log(`Cultura 2: ${culturas2}`)
 
@@ -380,13 +380,14 @@ export class CulturaService {
     return response;
   }
 
-  async getDeletedCulturas(last_pulled_at: Date): Promise<String[]> {
+  async getDeletedCulturas(last_pulled_at: Date, userId: string): Promise<String[]> {
     const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
     const parsedDate = parseISO(formatDate).toISOString()
 
     return await this.culturaModel.find({
       deletedAt: { $gt: `${parsedDate}` },
       createdAt: { $lte: `${parsedDate}` },
+      userId: userId
     })
       .select('_id')
       .lean()

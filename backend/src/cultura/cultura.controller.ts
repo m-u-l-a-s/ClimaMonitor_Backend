@@ -72,9 +72,9 @@ export class CulturaController {
   }
 
   @ApiQuery({ name: "lastPulledAt", required: false })
-  @Get("/sync")
-  async pullChanges(@Query('lastPulledAt') lastPulledAt?: number) {
-    return this.culturaService.pull(lastPulledAt);
+  @Get("/sync/:userId")
+  async pullChanges(@Param("userId") userId : string, @Query('lastPulledAt') lastPulledAt?: number ) {
+    return this.culturaService.pull(userId, lastPulledAt);
   }
 
   @Post("/sync")
