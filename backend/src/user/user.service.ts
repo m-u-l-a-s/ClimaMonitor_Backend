@@ -95,10 +95,10 @@ export class UserService {
     }
 
     const payload = { username: user.username, sub: user.id };
-    const token = this.jwtService.sign(payload, { expiresIn: '1h' });
+    const token = await this.jwtService.signAsync(payload, { expiresIn: "1h", secret: process.env.TOKEN})
 
     return {
-      token,
+      token : token,
       userId: user.id,
     };
   }
