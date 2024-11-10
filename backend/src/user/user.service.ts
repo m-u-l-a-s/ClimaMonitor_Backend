@@ -50,7 +50,7 @@ export class UserService {
   }
 
   async update(id: String, user: Partial<User>): Promise<{ user?: User; error?: string }> {
-    const existingUser = await this.userRepository.findById(id);
+    const existingUser = await this.userRepository.findById(id).exec();
 
     if (!existingUser) {
       return { error: 'User not found' };
@@ -65,7 +65,7 @@ export class UserService {
 
     user.lastUpdate = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
 
-    await this.userRepository.updateOne(id, user);
+    await this.userRepository.findByIdAndUpdate(id, user);
     const updatedUser = await this.userRepository.findById(id);
     return { user: updatedUser };
   }
