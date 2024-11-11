@@ -66,6 +66,9 @@ export class Cultura {
 
   @Prop({ type: String, required: true })
   userId: string;
+
+  @Prop({ type: String, required: true, unique: true })
+  id: string;
 }
 
 export const CulturaSchema = SchemaFactory.createForClass(Cultura);

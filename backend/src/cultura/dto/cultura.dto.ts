@@ -108,6 +108,10 @@ export class CulturaDto {
     description: 'Identificação do usuário',
     example: '67300baf9ee821cbe41718a1',
   })
+
+  @IsString()
+  id: string;
+
   @IsString()
   userId: string;
 }
