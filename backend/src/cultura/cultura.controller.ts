@@ -4,11 +4,12 @@ import { CulturaDto } from './dto/cultura.dto';
 import { CulturaDocument, Cultura } from './entities/cultura.entity';
 import { ApiOperation, ApiResponse, ApiTags, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { HttpStatusCode } from 'axios';
+import { NotificacaoType } from 'src/types/types';
 
 @ApiTags('Cultura') // Tag para agrupar endpoints no Swagger
 @Controller('cultura')
 export class CulturaController {
-  constructor(private readonly culturaService: CulturaService) { }
+  constructor(private readonly culturaService: CulturaService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -16,8 +17,9 @@ export class CulturaController {
   @ApiResponse({ status: 201, description: 'Cultura criada com sucesso.', type: Cultura }) // Resposta esperada
   @ApiResponse({ status: 400, description: 'Dados inválidos.' }) // Possíveis erros
   @ApiBody({ type: CulturaDto, description: 'Dados da nova cultura' }) // Documenta o corpo da requisição
-  create(@Body() dto: CulturaDto): Promise<CulturaDocument> {
-    return this.culturaService.create(dto);
+  async create(@Body() dto: CulturaDto): Promise<CulturaDocument> {
+    const cultura = await this.culturaService.create(dto);
+    return cultura;
   }
 
   @Get()
@@ -28,19 +30,18 @@ export class CulturaController {
     return this.culturaService.findAll();
   }
 
-  @Get("user/:id")
+  @Get('user/:id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Lista todas as culturas de um usuário' }) // Descrição do endpoint
   @ApiResponse({ status: 200, description: 'Culturas retornadas com sucesso.', type: [Cultura] }) // Resposta esperada
-  findAllByUserId(@Param("id") id : String): Promise<CulturaDocument[]> {
+  findAllByUserId(@Param('id') id: String): Promise<CulturaDocument[]> {
     return this.culturaService.findAllByUserId(id);
   }
 
-
   // @Get(':id')
   // @HttpCode(HttpStatus.OK)
-  // @ApiOperation({ summary: 'Retorna uma cultura específica por ID' }) 
-  // @ApiParam({ name: 'id', description: 'ID da cultura', type: String }) 
+  // @ApiOperation({ summary: 'Retorna uma cultura específica por ID' })
+  // @ApiParam({ name: 'id', description: 'ID da cultura', type: String })
   // @ApiResponse({ status: 200, description: 'Cultura retornada com sucesso.', type: Cultura })
   // @ApiResponse({ status: 404, description: 'Cultura não encontrada.' })
   // findOne(@Param('id') id: string): Promise<CulturaDocument> {
@@ -54,10 +55,7 @@ export class CulturaController {
   @ApiBody({ type: CulturaDto, description: 'Dados atualizados da cultura' }) // Documenta o corpo da requisição
   @ApiResponse({ status: 200, description: 'Cultura atualizada com sucesso.' }) // Resposta esperada
   @ApiResponse({ status: 404, description: 'Cultura não encontrada.' }) // Possíveis erros
-  update(
-    @Param('id') id: string,
-    @Body() dto: CulturaDto,
-  ): Promise<CulturaDocument> {
+  update(@Param('id') id: string, @Body() dto: CulturaDto): Promise<CulturaDocument> {
     return this.culturaService.update(id, dto);
   }
 
@@ -71,14 +69,22 @@ export class CulturaController {
     return this.culturaService.remove(id);
   }
 
-  @ApiQuery({ name: "lastPulledAt", required: false })
-  @Get("/sync/:userId")
-  async pullChanges(@Param("userId") userId : string, @Query('lastPulledAt') lastPulledAt?: number ) {
-    return this.culturaService.pull(userId, lastPulledAt);
+  @Get('alertas/:userId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Retorna alertas do dia para um usuário' })
+  @ApiResponse({ status: 200, description: 'Alertas retornados com sucesso.' })
+  async getAlertasDoDia(@Param('userId') userId: string): Promise<NotificacaoType[]> {
+    return this.culturaService.getAlertasDoDia(userId);
   }
 
-  @Post("/sync")
-  async pushChanges(@Body() changes: any) {
-    return this.culturaService.push(changes);
-  }
+  // @ApiQuery({ name: "lastPulledAt", required: false })
+  // @Get("/sync/:userId")
+  // async pullChanges(@Param("userId") userId : string, @Query('lastPulledAt') lastPulledAt?: number ) {
+  //   return this.culturaService.pull(userId, lastPulledAt);
+  // }
+
+  // @Post("/sync")
+  // async pushChanges(@Body() changes: any) {
+  //   return this.culturaService.push(changes);
+  // }
 }

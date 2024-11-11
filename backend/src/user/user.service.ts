@@ -1,35 +1,39 @@
 import { User } from './entities/user.entity';
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { HttpStatusCode } from 'axios';
 import { formatInTimeZone } from 'date-fns-tz';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
 export class UserService {
-  constructor(@InjectModel(User.name) private userRepository: Model<User>,
-    private readonly jwtService: JwtService
-  ) { }
+  constructor(
+    @InjectModel(User.name) private userRepository: Model<User>,
+    private readonly jwtService: JwtService,
+  ) {}
 
   async findAll(): Promise<User[]> {
     return await this.userRepository.find().exec();
   }
 
-  async findOne(id: string): Promise<User> {
+  async findOne(id: string): Promise<User | null> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new Error(`ID inválido: ${id}`);
+    }
+
     return await this.userRepository.findById(id).exec();
   }
 
-  async findOneByUsername(username: string): Promise<User> {
-    return await this.userRepository.findOne({ username: username }).exec();
+  async findOneByEmail(email: string): Promise<User> {
+    return await this.userRepository.findOne({ email }).exec();
   }
 
   async create(user: CreateUserDto): Promise<User> {
-
     const existingUser = await this.userRepository.findOne({
-      where: { username: user.username },
+      where: { email: user.email },
     });
 
     if (existingUser) {
@@ -38,14 +42,17 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(user.password, 10);
     const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
-    
+
     const newUser = await this.userRepository.create({
+      email: user.email,
+      name: user.name,
+      lastName: user.lastName,
       password: hashedPassword,
-      lastUpdate: hoje,
       createdAt: hoje,
-      deletedAt: "",
-      username: user.username
+      lastUpdate: hoje,
+      deletedAt: '',
     });
+
     return this.userRepository.create(newUser);
   }
 
@@ -56,10 +63,10 @@ export class UserService {
       return { error: 'User not found' };
     }
 
-    if (user.username && user.username !== existingUser.username) {
-      const usernameExists = await this.userRepository.findOne({ username: user.username });
-      if (usernameExists) {
-        return { error: 'Username already exists' };
+    if (user.email && user.email !== existingUser.email) {
+      const emailExists = await this.userRepository.findOne({ email: user.email });
+      if (emailExists) {
+        return { error: 'Email already exists' };
       }
     }
 
@@ -70,20 +77,26 @@ export class UserService {
     return { user: updatedUser };
   }
 
-  async remove(id: string): Promise<HttpStatusCode> {
+  async remove(id: string): Promise<HttpStatus> {
     try {
       const user = await this.userRepository.findById(id).exec();
+
+      if (!user) {
+        return HttpStatus.NOT_FOUND;
+      }
+
       user.deletedAt = formatInTimeZone(new Date(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
-      user.password = await bcrypt.hashSync(user.password, 10);
-      await this.userRepository.findByIdAndUpdate(id, user).exec()
-      return HttpStatusCode.Ok;
+
+      await this.userRepository.findByIdAndUpdate(id, user).exec();
+      return HttpStatus.OK;
     } catch (error) {
-      return HttpStatusCode.NotFound;
+      console.error(error);
+      return HttpStatus.INTERNAL_SERVER_ERROR;
     }
   }
 
-  async login(username: string, password: string) {
-    const user = await this.userRepository.findOne({ username: username });
+  async login(email: string, password: string) {
+    const user = await this.userRepository.findOne({ email });
 
     if (!user) {
       return { error: 'Usuário inválido' };
@@ -94,11 +107,11 @@ export class UserService {
       return { error: 'Senha incorreta' };
     }
 
-    const payload = { username: user.username, sub: user.id };
-    const token = await this.jwtService.signAsync(payload, { expiresIn: "1h", secret: process.env.TOKEN})
+    const payload = { email: user.email, sub: user.id };
+    const token = await this.jwtService.signAsync(payload, { expiresIn: '1h', secret: process.env.TOKEN });
 
     return {
-      token : token,
+      token: token,
       userId: user.id,
     };
   }

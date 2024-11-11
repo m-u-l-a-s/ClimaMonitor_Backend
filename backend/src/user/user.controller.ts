@@ -32,15 +32,18 @@ export class UserController {
     return users;
   }
 
-
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async findOne(@Param('id') id: string) {
-    const user = await this.userService.findOne(id);
-    if (!user) {
-      return { message: `User with ID ${id} not found` };
+    try {
+      const user = await this.userService.findOne(id);
+      if (!user) {
+        return { message: `Usuário com ID ${id} não encontrado` };
+      }
+      return user;
+    } catch (error) {
+      return { message: error.message };
     }
-    return user;
   }
 
   @Post()
@@ -65,7 +68,7 @@ export class UserController {
 
     if (result.error === 'User not found') {
       throw new NotFoundException(result.error);
-    } else if (result.error === 'Username already exists') {
+    } else if (result.error === 'Email already exists') {
       throw new ConflictException(result.error);
     }
 
@@ -86,8 +89,8 @@ export class UserController {
   @Post('login')
   @HttpCode(200)
   async login(@Body() loginDto: LoginDto) {
-    const { username, password } = loginDto;
-    const result = await this.userService.login(username, password);
+    const { email, password } = loginDto;
+    const result = await this.userService.login(email, password);
 
     if ('error' in result) {
       if (result.error === 'Usuário inválido' || result.error === 'Senha incorreta') {
