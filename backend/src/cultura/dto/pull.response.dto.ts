@@ -1,4 +1,3 @@
-import exp from "constants";
 import { Pluviometria, Temperatura } from "../entities/cultura.entity";
 
 export type PullResponseCultura = {

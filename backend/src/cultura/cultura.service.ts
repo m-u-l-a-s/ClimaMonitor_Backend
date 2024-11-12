@@ -415,34 +415,45 @@ export class CulturaService {
         responseTemperaturasCreated,
         responsePluviometriaCreated } = await this.getCreatedCultura(lastPulledAtDate.toDate(), userId)
 
+      const {
+        responseCulturaUpdated,
+        responseTemperaturasUpdated,
+        responsePluviometriaUpdated,
+        responseAlertaTempUpdated,
+        responseAlertaPluviUpdated
+      } = await this.getUpdatedCultura(lastPulledAtDate.toDate(), userId)
+
+      const culturasDeletadas = await this.getDeletedCulturas(lastPulledAtDate.toDate(), userId)
+
       changes["Cultura"] = {
         created: responseCulturaCreated,
-        updated: await this.getUpdatedCultura(lastPulledAtDate.toDate(), userId),
-        deleted: await this.getDeletedCulturas(lastPulledAtDate.toDate(), userId),
+        updated: responseCulturaUpdated,
+        deleted: culturasDeletadas
+        ,
       };
 
       changes["Temperaturas"] = {
         created: responseTemperaturasCreated,
-        updated: await this.getUpdatedTemperaturas(lastPulledAtDate.toDate(), userId),
-        deleted: []
+        updated: responseTemperaturasUpdated,
+        deleted: culturasDeletadas
       };
 
       changes["Pluviometria"] = {
         created: responsePluviometriaCreated,
-        updated: await this.getUpdatedTemperaturas(lastPulledAtDate.toDate(), userId),
-        deleted: []
+        updated: responsePluviometriaUpdated,
+        deleted: culturasDeletadas
       };
 
       changes["AlertasTemperatura"] = {
         created: responseAlertaTempCreated,
-        updated: await this.getUpdatedTemperaturas(lastPulledAtDate.toDate(), userId),
-        deleted: []
+        updated: responseAlertaTempUpdated,
+        deleted: culturasDeletadas
       };
 
       changes["AlertasPluviometria"] = {
         created: responseAlertaPluviCreated,
-        updated: await this.getUpdatedTemperaturas(lastPulledAtDate.toDate(), userId),
-        deleted: []
+        updated: responseAlertaPluviUpdated,
+        deleted: culturasDeletadas
       };
     }
 
@@ -583,7 +594,7 @@ export class CulturaService {
       .exec();
 
 
-    const response: PullResponseCultura[] = culturas2
+    const responseCulturaUpdated: PullResponseCultura[] = culturas2
       .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
       .map((doc) => ({
         nome_cultivo: doc.nome_cultivo,
@@ -600,7 +611,57 @@ export class CulturaService {
         id: doc.id,
       }));
 
-    return response;
+    const responseTemperaturasUpdated: PullResponseTemperatura[] = []
+    const responseAlertaTempUpdated: PullResponseAlertasTemp[] = []
+    const responsePluviometriaUpdated: PullResponsePluviometria[] = []
+    const responseAlertaPluviUpdated: PullResponseAlertasPluvi[] = []
+
+
+    for (let cultura of culturas2) {
+      for (let temperatura of cultura.temperaturas) {
+        responseTemperaturasUpdated.push({
+          idCultura: cultura.id,
+          data: temperatura.data,
+          temperatura_max: temperatura.temperatura_max,
+          temperatura_media: temperatura.temperatura_media,
+          temperatura_min: temperatura.temperatura_min
+        })
+      }
+
+      for (let temperatura of cultura.alertasTemp) {
+        responseAlertaTempUpdated.push({
+          idCultura: cultura.id,
+          data: temperatura.data,
+          temperatura_max: temperatura.temperatura_max,
+          temperatura_media: temperatura.temperatura_media,
+          temperatura_min: temperatura.temperatura_min
+        })
+      }
+
+      for (let pluviometria of cultura.pluviometrias) {
+        responsePluviometriaUpdated.push({
+          idCultura: cultura.id,
+          data: pluviometria.data,
+          pluviometria: pluviometria.pluviometria
+        })
+      }
+
+      for (let pluviometria of cultura.alertasPluvi) {
+        responseAlertaPluviUpdated.push({
+          idCultura: cultura.id,
+          data: pluviometria.data,
+          pluviometria: pluviometria.pluviometria
+        })
+      }
+    }
+
+    return {
+      responseCulturaUpdated,
+      responseTemperaturasUpdated,
+      responsePluviometriaUpdated,
+      responseAlertaTempUpdated,
+      responseAlertaPluviUpdated
+    };
   }
 
   async getDeletedCulturas(last_pulled_at: Date, userId: string): Promise<String[]> {
