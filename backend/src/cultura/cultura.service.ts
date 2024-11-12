@@ -12,6 +12,7 @@ import { HttpStatusCode } from 'axios';
 import * as moment from 'moment';
 import { setTimeout } from 'timers/promises';
 import { NotificacaoType } from 'src/types/types';
+import { CulturaTemperaturas, PullResponseAlertasPluvi, PullResponseAlertasTemp, PullResponseCultura, PullResponsePluviometria, PullResponseTemperatura } from './dto/pull.response.dto';
 
 @Injectable()
 export class CulturaService {
@@ -175,9 +176,10 @@ export class CulturaService {
     }
   }
 
-  async findAllByUserId(userId: String): Promise<CulturaDocument[]> {
+  async findAllByUserId(userId: String) {
     try {
-      const culturas = await this.culturaModel.find({ userId: userId, deletedAt: "" }).exec();
+      const culturas = await this.culturaModel.find({ userId: userId, deletedAt: "" })
+        .exec();
 
       const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
       for (let cultura of culturas) {
@@ -186,7 +188,75 @@ export class CulturaService {
         }
       }
 
-      return culturas;
+      const responseCulturaCreated: PullResponseCultura[] = culturas
+        .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
+        .map((doc) => ({
+          nome_cultivo: doc.nome_cultivo,
+          latitude: doc.ponto_cultivo.latitude,
+          longitude: doc.ponto_cultivo.longitude,
+          temperatura_max: doc.temperatura_max,
+          temperatura_min: doc.temperatura_min,
+          pluviometria_max: doc.pluviometria_max,
+          pluviometria_min: doc.pluviometria_min,
+          lastUpdate: doc.lastUpdate,
+          createdAt: doc.createdAt,
+          deletedAt: '',
+          userId: doc.userId,
+          id: doc.id,
+        }));
+
+      const responseTemperaturasCreated: PullResponseTemperatura[] = []
+      const responseAlertaTempCreated: PullResponseAlertasTemp[] = []
+      const responsePluviometriaCreated: PullResponsePluviometria[] = []
+      const responseAlertaPluviCreated: PullResponseAlertasPluvi[] = []
+
+
+      for (let cultura of culturas) {
+        for (let temperatura of cultura.temperaturas) {
+          responseTemperaturasCreated.push({
+            idCultura: cultura.id,
+            data: temperatura.data,
+            temperatura_max: temperatura.temperatura_max,
+            temperatura_media: temperatura.temperatura_media,
+            temperatura_min: temperatura.temperatura_min
+          })
+        }
+
+        for (let alertaTemp of cultura.alertasTemp) {
+          responseAlertaTempCreated.push({
+            idCultura: cultura.id,
+            data: alertaTemp.data,
+            temperatura_max: alertaTemp.temperatura_max,
+            temperatura_media: alertaTemp.temperatura_media,
+            temperatura_min: alertaTemp.temperatura_min
+          })
+        }
+
+        for (let pluviometria of cultura.pluviometrias) {
+          responsePluviometriaCreated.push({
+            idCultura: cultura.id,
+            data: pluviometria.data,
+            pluviometria: pluviometria.pluviometria
+          })
+        }
+
+        for (let alertaPluvi of cultura.alertasPluvi) {
+          responseAlertaPluviCreated.push({
+            idCultura: cultura.id,
+            data: alertaPluvi.data,
+            pluviometria: alertaPluvi.pluviometria
+          })
+        }
+      }
+
+      return {
+        responseCulturaCreated,
+        responseAlertaTempCreated,
+        responseAlertaPluviCreated,
+        responseTemperaturasCreated,
+        responsePluviometriaCreated
+      };
+
     } catch (error) {
       throw new Error(error);
     }
@@ -296,32 +366,84 @@ export class CulturaService {
     const timestamp = moment().unix();
     const changes = {};
 
-    await this.findAll();
 
     if (!last_pulled_at) {
-      for (const [name, model] of Object.entries(this.models)) {
-        changes[name] = {
-          created: await this.findAllByUserId(userId),
-          updated: [],
-          deleted: [],
-        };
-      }
+      const {
+        responseCulturaCreated,
+        responseAlertaTempCreated,
+        responseAlertaPluviCreated,
+        responseTemperaturasCreated,
+        responsePluviometriaCreated
+      } = await this.findAllByUserId(userId);
+
+      changes["Cultura"] = {
+        created: responseCulturaCreated,
+        updated: [],
+        deleted: [],
+      };
+
+      changes["Temperaturas"] = {
+        created: responseTemperaturasCreated,
+        updated: [],
+        deleted: []
+      };
+
+      changes["Pluviometria"] = {
+        created: responsePluviometriaCreated,
+        updated: [],
+        deleted: []
+      };
+
+      changes["AlertasTemperatura"] = {
+        created: responseAlertaTempCreated,
+        updated: [],
+        deleted: []
+      };
+
+      changes["AlertasPluviometria"] = {
+        created: responseAlertaPluviCreated,
+        updated: [],
+        deleted: []
+      };
+
     } else {
       const lastPulledAtDate = moment.unix(last_pulled_at);
 
-      // console.log("Moment: " + lastPulledAtDate)
-      // console.log(`Date: ${lastPulledAtDate.toDate().toISOString()}`)
-      // const timezone = formatInTimeZone(lastPulledAtDate.toDate(), 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX")
-      // console.log(`timezone: ${timezone}`);
-      // console.log(`ISO: ${parseISO(timezone).toISOString()}`)
+      const { responseCulturaCreated,
+        responseAlertaTempCreated,
+        responseAlertaPluviCreated,
+        responseTemperaturasCreated,
+        responsePluviometriaCreated } = await this.getCreatedCultura(lastPulledAtDate.toDate(), userId)
 
-      for (const [name, model] of Object.entries(this.models)) {
-        changes[name] = {
-          created: await this.getCreatedCultura(lastPulledAtDate.toDate(), userId),
-          updated: await this.getUpdatedCultura(lastPulledAtDate.toDate(), userId),
-          deleted: await this.getDeletedCulturas(lastPulledAtDate.toDate(), userId),
-        };
-      }
+      changes["Cultura"] = {
+        created: responseCulturaCreated,
+        updated: await this.getUpdatedCultura(lastPulledAtDate.toDate(), userId),
+        deleted: await this.getDeletedCulturas(lastPulledAtDate.toDate(), userId),
+      };
+
+      changes["Temperaturas"] = {
+        created: responseTemperaturasCreated,
+        updated: await this.getUpdatedTemperaturas(lastPulledAtDate.toDate(), userId),
+        deleted: []
+      };
+
+      changes["Pluviometria"] = {
+        created: responsePluviometriaCreated,
+        updated: await this.getUpdatedTemperaturas(lastPulledAtDate.toDate(), userId),
+        deleted: []
+      };
+
+      changes["AlertasTemperatura"] = {
+        created: responseAlertaTempCreated,
+        updated: await this.getUpdatedTemperaturas(lastPulledAtDate.toDate(), userId),
+        deleted: []
+      };
+
+      changes["AlertasPluviometria"] = {
+        created: responseAlertaPluviCreated,
+        updated: await this.getUpdatedTemperaturas(lastPulledAtDate.toDate(), userId),
+        deleted: []
+      };
     }
 
     return { changes, timestamp };
@@ -334,39 +456,73 @@ export class CulturaService {
 
     console.log(parsedDate);
 
-    const culturas = await this.culturaModel.find({ createdAt: { $gt: `${formatDate}` }, userId: userId, deletedAt: ""}).exec();
-
-    for (let cultura of culturas) {
-      if (cultura.deletedAt == '') {
-        cultura = await this.UpdateTempAndPluvi(cultura, hoje);
-      }
-    }
-
     const culturas2 = await this.culturaModel
-      .find({ createdAt: { $gt: `${formatDate}` }, userId: userId, deletedAt: ""})
+      .find({ createdAt: { $gt: `${formatDate}` }, userId: userId, deletedAt: "" })
       .lean()
       .exec();
 
-    const result = culturas2
+    const responseCulturaCreated: PullResponseCultura[] = culturas2
       .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
       .map((doc) => ({
-        _id: doc._id,
         nome_cultivo: doc.nome_cultivo,
-        ponto_cultivo: JSON.stringify(doc.ponto_cultivo),
+        latitude: doc.ponto_cultivo.latitude,
+        longitude: doc.ponto_cultivo.longitude,
         temperatura_max: doc.temperatura_max,
         temperatura_min: doc.temperatura_min,
         pluviometria_max: doc.pluviometria_max,
         pluviometria_min: doc.pluviometria_min,
-        temperaturas: JSON.stringify(doc.temperaturas),
-        pluviometrias: JSON.stringify(doc.pluviometrias),
-        alertasPluvi: JSON.stringify(doc.alertasPluvi),
-        alertasTemp: JSON.stringify(doc.alertasTemp),
         lastUpdate: doc.lastUpdate,
         createdAt: doc.createdAt,
         deletedAt: '',
+        userId: doc.userId,
         id: doc.id,
       }));
-    return result;
+
+    const responseTemperaturasCreated: PullResponseTemperatura[] = []
+    const responseAlertaTempCreated: PullResponseAlertasTemp[] = []
+    const responsePluviometriaCreated: PullResponsePluviometria[] = []
+    const responseAlertaPluviCreated: PullResponseAlertasPluvi[] = []
+
+
+    for (let cultura of culturas2) {
+      for (let temperatura of cultura.temperaturas) {
+        responseTemperaturasCreated.push({
+          idCultura: cultura.id,
+          data: temperatura.data,
+          temperatura_max: temperatura.temperatura_max,
+          temperatura_media: temperatura.temperatura_media,
+          temperatura_min: temperatura.temperatura_min
+        })
+      }
+
+      for (let temperatura of cultura.alertasTemp) {
+        responseAlertaTempCreated.push({
+          idCultura: cultura.id,
+          data: temperatura.data,
+          temperatura_max: temperatura.temperatura_max,
+          temperatura_media: temperatura.temperatura_media,
+          temperatura_min: temperatura.temperatura_min
+        })
+      }
+
+      for (let pluviometria of cultura.pluviometrias) {
+        responsePluviometriaCreated.push({
+          idCultura: cultura.id,
+          data: pluviometria.data,
+          pluviometria: pluviometria.pluviometria
+        })
+      }
+
+      for (let pluviometria of cultura.alertasPluvi) {
+        responseAlertaPluviCreated.push({
+          idCultura: cultura.id,
+          data: pluviometria.data,
+          pluviometria: pluviometria.pluviometria
+        })
+      }
+    }
+
+    return { responseCulturaCreated, responseAlertaTempCreated, responseAlertaPluviCreated, responseTemperaturasCreated, responsePluviometriaCreated };
   }
 
   async getAllCreatedCultura() {
@@ -386,15 +542,15 @@ export class CulturaService {
       .map((doc) => ({
         _id: doc._id,
         nome_cultivo: doc.nome_cultivo,
-        ponto_cultivo: JSON.stringify(doc.ponto_cultivo),
+        ponto_cultivo: doc.ponto_cultivo,
         temperatura_max: doc.temperatura_max,
         temperatura_min: doc.temperatura_min,
         pluviometria_max: doc.pluviometria_max,
         pluviometria_min: doc.pluviometria_min,
-        temperaturas: JSON.stringify(doc.temperaturas),
-        pluviometrias: JSON.stringify(doc.pluviometrias),
-        alertasPluvi: JSON.stringify(doc.alertasPluvi),
-        alertasTemp: JSON.stringify(doc.alertasTemp),
+        temperaturas: doc.temperaturas,
+        pluviometrias: doc.pluviometrias,
+        alertasPluvi: doc.alertasPluvi,
+        alertasTemp: doc.alertasTemp,
         lastUpdate: doc.lastUpdate,
         createdAt: doc.createdAt,
         deletedAt: '',
@@ -411,7 +567,7 @@ export class CulturaService {
     const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
     const culturas = await this.culturaModel
-      .find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId, deletedAt: ""})
+      .find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId, deletedAt: "" })
       .exec();
 
     for (let cultura of culturas) {
@@ -420,33 +576,28 @@ export class CulturaService {
       }
     }
 
-    //   // console.log("Data: " + formatDate)
-
     const culturas2 = await this.culturaModel
-      .find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId, deletedAt: ""})
+      .find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId, deletedAt: "" })
+      .select("-temperaturas -pluviometrias -alertasTemp -alertasPluvi")
       .lean()
       .exec();
 
-    // console.log(`Cultura 2: ${culturas2}`)
 
-    const response = culturas2
+    const response: PullResponseCultura[] = culturas2
       .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
       .map((doc) => ({
         nome_cultivo: doc.nome_cultivo,
-        ponto_cultivo: JSON.stringify(doc.ponto_cultivo),
+        latitude: doc.ponto_cultivo.latitude,
+        longitude: doc.ponto_cultivo.longitude,
         temperatura_max: doc.temperatura_max,
         temperatura_min: doc.temperatura_min,
         pluviometria_max: doc.pluviometria_max,
         pluviometria_min: doc.pluviometria_min,
-        temperaturas: JSON.stringify(doc.temperaturas),
-        pluviometrias: JSON.stringify(doc.pluviometrias),
-        alertasPluvi: JSON.stringify(doc.alertasPluvi),
-        alertasTemp: JSON.stringify(doc.alertasTemp),
         lastUpdate: doc.lastUpdate,
         createdAt: doc.createdAt,
         deletedAt: '',
+        userId: doc.userId,
         id: doc.id,
-        _id: doc._id,
       }));
 
     return response;
@@ -580,4 +731,33 @@ export class CulturaService {
 
     return notificacoes;
   }
+
+  async getUpdatedTemperaturas(last_pulled_at: Date, userId: string) {
+    const formatDate = formatInTimeZone(last_pulled_at, 'America/Sao_Paulo', "yyyy-MM-dd'T'HH:mm:ssXXX");
+    const parsedDate = parseISO(formatDate).toISOString();
+
+    const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+
+    const temperaturas: CulturaTemperaturas[] = await this.culturaModel
+      .find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId, deletedAt: "" })
+      .select("id temperaturas")
+      .exec();
+
+    let result: PullResponseTemperatura[]
+
+    for (let temperatura of temperaturas) {
+      temperatura.temperaturas.map(temp => (
+        result.push({
+          idCultura: temperatura.id,
+          data: temp.data,
+          temperatura_max: temp.temperatura_max,
+          temperatura_media: temp.temperatura_media,
+          temperatura_min: temp.temperatura_min
+        })
+      ))
+    }
+    return result;
+  }
+
+
 }
