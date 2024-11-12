@@ -4,6 +4,7 @@ import { HydratedDocument, ObjectId } from 'mongoose';
 export type CulturaDocument = HydratedDocument<Cultura>;
 
 export type Temperatura = {
+  [x: string]: any;
   data: string;
   temperatura_media: number;
   temperatura_max: number;
@@ -11,6 +12,7 @@ export type Temperatura = {
 };
 
 export type Pluviometria = {
+  [x: string]: any;
   data: string;
   pluviometria: number;
 };

@@ -517,67 +517,58 @@ export class CulturaService {
     }
   }
 
-  async getAlertasDoDia(userId: string): Promise<NotificacaoType[]> {
+  async getAlertasDoDia(userId: string) {
     const notificacoes: NotificacaoType[] = [];
     const data = new Date();
     data.setDate(data.getDate() - 1);
 
     const ontem = formatInTimeZone(data, 'America/Sao_Paulo', 'yyyy-MM-dd');
-    console.log('Data de ontem:', ontem);
 
-    const culturas = await this.culturaModel.find({ userId });
+    try {
+      const culturas = await this.culturaModel.find({ userId });
 
-    for (const {
-      alertasPluvi = [],
-      alertasTemp = [],
-      pluviometria_max,
-      pluviometria_min,
-      temperatura_max,
-      temperatura_min,
-      nome_cultivo,
-    } of culturas) {
-      let descTemp = '';
-      let descPluvi = '';
+      for (const cultura of culturas) {
+        let descTemp = '';
+        let descPluvi = '';
 
-      const checkAlertaPluviometria = (alerta: any) => {
-        if (alerta && alerta.data === ontem) {
-          if (pluviometria_max < alerta.pluviometria) {
-            return `A pluviometria excedeu a máxima de ${pluviometria_max}mm.`;
-          }
-          if (pluviometria_min > alerta.pluviometria) {
-            return `A pluviometria ficou abaixo do limite mínimo de ${pluviometria_min}mm.`;
+        if (cultura.alertasPluvi.length !== 0) {
+          const alertaPluviometria = cultura.alertasPluvi.at(-1);
+
+          if (alertaPluviometria?.get('data') === ontem) {
+            if (cultura.pluviometria_max < alertaPluviometria.get('pluviometria')) {
+              descPluvi = `A pluviometria excedeu a máxima de ${cultura.pluviometria_max}mm.`;
+            }
+
+            if (cultura.pluviometria_min > alertaPluviometria.get('pluviometria')) {
+              descPluvi = `A pluviometria ficou abaixo do limite mínimo de ${cultura.pluviometria_min}mm.`;
+            }
           }
         }
-        return '';
-      };
 
-      const checkAlertaTemperatura = (alerta: any) => {
-        if (alerta && alerta.data === ontem) {
-          if (temperatura_max < alerta.temperatura_max) {
-            return `A temperatura excedeu a máxima de ${temperatura_max}°C.`;
-          }
-          if (temperatura_min > alerta.temperatura_min) {
-            return `A temperatura ficou abaixo do limite mínimo de ${temperatura_min}°C.`;
+        if (cultura.alertasTemp.length !== 0) {
+          const alertaTemperatura = cultura.alertasTemp.at(-1);
+
+          if (alertaTemperatura?.get('data') === ontem) {
+            if (cultura.temperatura_max < alertaTemperatura.get('temperatura_max')) {
+              descTemp = `A temperatura excedeu a máxima de ${cultura.temperatura_max}°C.`;
+            }
+
+            if (cultura.temperatura_min > alertaTemperatura.get('temperatura_min')) {
+              descTemp = `A temperatura ficou abaixo do limite mínimo de ${cultura.temperatura_min}°C.`;
+            }
           }
         }
-        return '';
-      };
 
-      const ultimoAlertaPluvi = alertasPluvi.length > 0 ? alertasPluvi.at(-1) : null;
-      const ultimoAlertaTemp = alertasTemp.length > 0 ? alertasTemp.at(-1) : null;
-
-      descPluvi = checkAlertaPluviometria(ultimoAlertaPluvi);
-      descTemp = checkAlertaTemperatura(ultimoAlertaTemp);
-
-      if (descTemp || descPluvi) {
-        notificacoes.push({
-          nome_cultivo,
-          descPluviometria: descPluvi,
-          descTemperatura: descTemp,
-        });
+        if (descPluvi || descTemp) {
+          notificacoes.push({
+            nome_cultivo: cultura.nome_cultivo,
+            descPluviometria: descPluvi,
+            descTemperatura: descTemp,
+          });
+        }
       }
-    }
 
-    return notificacoes;
+      return notificacoes;
+    } catch (error) {}
   }
 }
