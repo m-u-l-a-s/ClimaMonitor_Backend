@@ -38,6 +38,15 @@ export class CulturaController {
   //   return this.culturaService.findAllByUserId(id);
   // }
 
+
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Retorna uma cultura baseado em um id' }) // Descrição do endpoint
+  @ApiResponse({ status: 200, description: 'Cultura retornadas com sucesso.', type: [Cultura] }) // Resposta esperada
+  findById(@Param('id') id: string): Promise<CulturaDocument> {
+    return this.culturaService.findOne(id);
+  }
+
   // @Get(':id')
   // @HttpCode(HttpStatus.OK)
   // @ApiOperation({ summary: 'Retorna uma cultura específica por ID' })
