@@ -49,10 +49,10 @@ export class Cultura {
   @Prop({ type: [{ data: String, pluviometria: Number }], required: true })
   pluviometrias: Pluviometria[];
 
-  @Prop({ type: [{ type: Map, of: Number }], required: true })
+  @Prop({ type: [{ data: String, temperatura_media: Number, temperatura_max: Number, temperatura_min: Number }], required: true })
   alertasTemp: Temperatura[];
 
-  @Prop({ type: [{ type: Map, of: Number }], required: true })
+  @Prop({ type: [{ data: String, pluviometria: Number }], required: true })
   alertasPluvi: Pluviometria[];
 
   @Prop({ type: String, required: true })
@@ -66,6 +66,9 @@ export class Cultura {
 
   @Prop({ type: String, required: true })
   userId: string;
+
+  @Prop({ type: String, required: false, unique: true })
+  id: string;
 }
 
 export const CulturaSchema = SchemaFactory.createForClass(Cultura);

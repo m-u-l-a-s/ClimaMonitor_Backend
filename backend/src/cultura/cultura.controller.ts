@@ -30,13 +30,13 @@ export class CulturaController {
     return this.culturaService.findAll();
   }
 
-  @Get('user/:id')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Lista todas as culturas de um usuário' }) // Descrição do endpoint
-  @ApiResponse({ status: 200, description: 'Culturas retornadas com sucesso.', type: [Cultura] }) // Resposta esperada
-  findAllByUserId(@Param('id') id: String): Promise<CulturaDocument[]> {
-    return this.culturaService.findAllByUserId(id);
-  }
+  // @Get('user/:id')
+  // @HttpCode(HttpStatus.OK)
+  // @ApiOperation({ summary: 'Lista todas as culturas de um usuário' }) // Descrição do endpoint
+  // @ApiResponse({ status: 200, description: 'Culturas retornadas com sucesso.', type: [Cultura] }) // Resposta esperada
+  // findAllByUserId(@Param('id') id: String): Promise<CulturaDocument[]> {
+  //   return this.culturaService.findAllByUserId(id);
+  // }
 
   // @Get(':id')
   // @HttpCode(HttpStatus.OK)
@@ -77,14 +77,14 @@ export class CulturaController {
     return this.culturaService.getAlertasDoDia(userId);
   }
 
-  // @ApiQuery({ name: "lastPulledAt", required: false })
-  // @Get("/sync/:userId")
-  // async pullChanges(@Param("userId") userId : string, @Query('lastPulledAt') lastPulledAt?: number ) {
-  //   return this.culturaService.pull(userId, lastPulledAt);
-  // }
+  @ApiQuery({ name: "lastPulledAt", required: false })
+  @Get("/sync/:userId")
+  async pullChanges(@Param("userId") userId : string, @Query('lastPulledAt') lastPulledAt?: number ) {
+    return this.culturaService.pull(userId, lastPulledAt);
+  }
 
-  // @Post("/sync")
-  // async pushChanges(@Body() changes: any) {
-  //   return this.culturaService.push(changes);
-  // }
+  @Post("/sync")
+  async pushChanges(@Body() changes: any) {
+    return this.culturaService.push(changes);
+  }
 }
