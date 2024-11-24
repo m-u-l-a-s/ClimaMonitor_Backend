@@ -1,7 +1,7 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import * as nano from 'nano';
 import { CulturaDto } from './dto/cultura.dto';
-import { CulturaDocument, Cultura, Temperatura, Pluviometria } from './entities/cultura.entity';
+import { CulturaDocument, Cultura, Temperatura, Pluviometria, Localização } from './entities/cultura.entity';
 import { firstValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { addDays, format, parseISO } from 'date-fns';
@@ -11,7 +11,7 @@ import { Model } from 'mongoose';
 import { HttpStatusCode } from 'axios';
 import * as moment from 'moment';
 import { setTimeout } from 'timers/promises';
-import { NotificacaoType } from 'src/types/types';
+import { NotificacaoType, PushChangesType } from 'src/types/types';
 import { CulturaTemperaturas, PullResponseAlertasPluvi, PullResponseAlertasTemp, PullResponseCultura, PullResponsePluviometria, PullResponseTemperatura } from './dto/pull.response.dto';
 
 @Injectable()
@@ -299,13 +299,16 @@ export class CulturaService {
     return this.culturaModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 
-  async push(changes) {
+  async push(changes: PushChangesType) {
     const { created, deleted, updated } = changes.Cultura;
-
-    console.log('Deletados: ' + deleted);
-    for (const [name, model] of Object.entries(this.models)) {
-      changes[name].created.forEach(async (doc) => {
-        const ponto_cultivo = JSON.parse(doc.ponto_cultivo);
+    // const { created, deleted, updated } = changes.Temperatura;
+    // const { created, deleted, updated } = changes.Pluviometria;
+    // const { created, deleted, updated } = changes.AlertasTemperatura;
+    // const { created, deleted, updated } = changes.AlertasPluviometria;
+    
+      changes["Cultura"].created.forEach(async (doc) => {
+        
+        const ponto_cultivo : Localização = {latitude: doc.latitude, longitude: doc.longitude};
 
         const data: CulturaDto = {
           id: doc.id,
@@ -327,38 +330,26 @@ export class CulturaService {
         await this.create(data);
       });
 
-      changes[name].updated.forEach(async (doc) => {
-        const ponto_cultivo = JSON.parse(doc.ponto_cultivo);
-        const temperaturas = JSON.parse(doc.temperaturas);
-        const pluviometrias = JSON.parse(doc.pluviometrias);
-        const alertasPluvi = JSON.parse(doc.alertasPluvi);
-        const alertasTemp = JSON.parse(doc.alertasTemp);
+      changes["Cultura"].updated.forEach(async (doc) => {
+        const ponto_cultivo : Localização = {latitude: doc.latitude, longitude: doc.longitude};
 
-        const data: CulturaDto = {
-          id: doc.id,
-          userId: doc.userId,
-          ponto_cultivo: ponto_cultivo,
-          nome_cultivo: doc.nome_cultivo,
-          temperatura_max: doc.temperatura_max,
-          temperatura_min: doc.temperatura_min,
-          pluviometria_max: doc.pluviometria_max,
-          pluviometria_min: doc.pluviometria_min,
-          alertasPluvi: alertasPluvi,
-          alertasTemp: alertasTemp,
-          pluviometrias: pluviometrias,
-          temperaturas: temperaturas,
-          createdAt: doc.createdAt,
-          deletedAt: doc.deletedAt,
-          lastUpdate: doc.lastUpdate,
-        };
+        const updatedCultura = await this.culturaModel.findOne({userId: doc.userId})
 
-        await this.update(doc._id, data);
+        updatedCultura.ponto_cultivo = ponto_cultivo;
+        updatedCultura.nome_cultivo = doc.nome_cultivo;
+        updatedCultura.temperatura_max = doc.temperatura_max;
+        updatedCultura.temperatura_min = doc.temperatura_min;
+        updatedCultura.pluviometria_max = doc.pluviometria_max;
+        updatedCultura.pluviometria_min = doc.pluviometria_min;
+        updatedCultura.lastUpdate = doc.lastUpdate;
+
+        await this.culturaModel.updateOne({_id : updatedCultura._id},updatedCultura);
       });
 
-      changes[name].deleted.forEach(async (id) => {
+      changes["Cultura"].deleted.forEach(async (id) => {
         await this.remove(id);
       });
-    }
+    
     return HttpStatusCode.NoContent;
   }
 
