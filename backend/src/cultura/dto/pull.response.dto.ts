@@ -1,6 +1,8 @@
 import { Pluviometria, Temperatura } from "../entities/cultura.entity";
 
 export type PullResponseCultura = {
+    id: number
+    id_cultura: string
     latitude: string;
     longitude: string;
     nome_cultivo: string;
@@ -8,15 +10,15 @@ export type PullResponseCultura = {
     pluviometria_max: number;
     temperatura_min: number;
     pluviometria_min: number;
-    lastUpdate: string;
-    createdAt: string;
-    deletedAt?: string;
-    id: string;
-    userId: string;
+    last_update_mongo: string;
+    created_at_mongo: string;
+    deleted_at_mongo: string;
+    user_id: string;
 }
 
 export type PullResponseTemperatura = {
-    idCultura: string
+    id: number
+    id_cultura: string
     data: string
     temperatura_media: number;
     temperatura_max: number;
@@ -24,13 +26,15 @@ export type PullResponseTemperatura = {
 }
 
 export type PullResponsePluviometria = {
-    idCultura: string
+    id: number
+    id_cultura: string
     data: string;
     pluviometria: number;
 }
 
 export type PullResponseAlertasTemp = {
-    idCultura: string
+    id: number
+    id_cultura: string
     data: string
     temperatura_media: number;
     temperatura_max: number;
@@ -38,7 +42,8 @@ export type PullResponseAlertasTemp = {
 }
 
 export type PullResponseAlertasPluvi = {
-    idCultura: string
+    id: number
+    id_cultura: string
     data: string;
     pluviometria: number;
 }

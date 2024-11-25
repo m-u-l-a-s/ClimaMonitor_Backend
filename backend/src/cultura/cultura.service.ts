@@ -13,6 +13,7 @@ import * as moment from 'moment';
 import { setTimeout } from 'timers/promises';
 import { NotificacaoType, PushChangesType } from 'src/types/types';
 import { CulturaTemperaturas, PullResponseAlertasPluvi, PullResponseAlertasTemp, PullResponseCultura, PullResponsePluviometria, PullResponseTemperatura } from './dto/pull.response.dto';
+import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 
 @Injectable()
 export class CulturaService {
@@ -190,7 +191,7 @@ export class CulturaService {
 
       const responseCulturaCreated: PullResponseCultura[] = culturas
         .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
-        .map((doc) => ({
+        .map((doc, index) => ({
           nome_cultivo: doc.nome_cultivo,
           latitude: doc.ponto_cultivo.latitude,
           longitude: doc.ponto_cultivo.longitude,
@@ -198,11 +199,12 @@ export class CulturaService {
           temperatura_min: doc.temperatura_min,
           pluviometria_max: doc.pluviometria_max,
           pluviometria_min: doc.pluviometria_min,
-          lastUpdate: doc.lastUpdate,
-          createdAt: doc.createdAt,
-          deletedAt: '',
-          userId: doc.userId,
-          id: doc.id,
+          last_update_mongo: doc.lastUpdate,
+          created_at_mongo: doc.createdAt,
+          deleted_at_mongo: '',
+          user_id: doc.userId,
+          id_cultura: doc.id,
+          id: index + 1
         }));
 
       const responseTemperaturasCreated: PullResponseTemperatura[] = []
@@ -212,41 +214,46 @@ export class CulturaService {
 
 
       for (let cultura of culturas) {
-        for (let temperatura of cultura.temperaturas) {
+        cultura.temperaturas.map((temperatura, index) => {
           responseTemperaturasCreated.push({
-            idCultura: cultura.id,
+            id_cultura: cultura.id,
             data: temperatura.data,
             temperatura_max: temperatura.temperatura_max,
             temperatura_media: temperatura.temperatura_media,
-            temperatura_min: temperatura.temperatura_min
+            temperatura_min: temperatura.temperatura_min,
+            id: index + 1
           })
-        }
+        })
 
-        for (let alertaTemp of cultura.alertasTemp) {
+
+        cultura.alertasTemp.map((alertaTemp, index) => {
           responseAlertaTempCreated.push({
-            idCultura: cultura.id,
+            id_cultura: cultura.id,
             data: alertaTemp.data,
             temperatura_max: alertaTemp.temperatura_max,
             temperatura_media: alertaTemp.temperatura_media,
-            temperatura_min: alertaTemp.temperatura_min
+            temperatura_min: alertaTemp.temperatura_min,
+            id: index + 1
           })
-        }
+        })
 
-        for (let pluviometria of cultura.pluviometrias) {
+        cultura.pluviometrias.map((pluviometria, index) => {
           responsePluviometriaCreated.push({
-            idCultura: cultura.id,
+            id_cultura: cultura.id,
             data: pluviometria.data,
-            pluviometria: pluviometria.pluviometria
+            pluviometria: pluviometria.pluviometria,
+            id: index + 1
           })
-        }
+        })
 
-        for (let alertaPluvi of cultura.alertasPluvi) {
+        cultura.alertasPluvi.map((alertaPluvi, index) => {
           responseAlertaPluviCreated.push({
-            idCultura: cultura.id,
+            id_cultura: cultura.id,
             data: alertaPluvi.data,
-            pluviometria: alertaPluvi.pluviometria
+            pluviometria: alertaPluvi.pluviometria,
+            id: index + 1
           })
-        }
+        })
       }
 
       return {
@@ -264,7 +271,7 @@ export class CulturaService {
 
   async findOne(id: string): Promise<CulturaDocument> {
     try {
-      const cultura = await this.culturaModel.findById(id).exec();
+      const cultura = await this.culturaModel.findOne({ id: id }).exec();
 
       const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
       console.log('hoje :' + hoje);
@@ -305,51 +312,51 @@ export class CulturaService {
     // const { created, deleted, updated } = changes.Pluviometria;
     // const { created, deleted, updated } = changes.AlertasTemperatura;
     // const { created, deleted, updated } = changes.AlertasPluviometria;
-    
-      changes["Cultura"].created.forEach(async (doc) => {
-        
-        const ponto_cultivo : Localização = {latitude: doc.latitude, longitude: doc.longitude};
 
-        const data: CulturaDto = {
-          id: doc.id,
-          userId: doc.userId,
-          ponto_cultivo: { latitude: ponto_cultivo.latitude, longitude: ponto_cultivo.longitude },
-          nome_cultivo: doc.nome_cultivo,
-          temperatura_max: doc.temperatura_max,
-          temperatura_min: doc.temperatura_min,
-          pluviometria_max: doc.pluviometria_max,
-          pluviometria_min: doc.pluviometria_min,
-          alertasPluvi: [],
-          alertasTemp: [],
-          pluviometrias: [],
-          temperaturas: [],
-          createdAt: doc.createdAt,
-          deletedAt: doc.deletedAt,
-          lastUpdate: doc.lastUpdate,
-        };
-        await this.create(data);
-      });
+    changes["Cultura"].created.forEach(async (doc) => {
 
-      changes["Cultura"].updated.forEach(async (doc) => {
-        const ponto_cultivo : Localização = {latitude: doc.latitude, longitude: doc.longitude};
+      const ponto_cultivo: Localização = { latitude: doc.latitude, longitude: doc.longitude };
 
-        const updatedCultura = await this.culturaModel.findOne({userId: doc.userId})
+      const data: CulturaDto = {
+        id: doc.id_cultura,
+        userId: doc.user_id,
+        ponto_cultivo: { latitude: ponto_cultivo.latitude, longitude: ponto_cultivo.longitude },
+        nome_cultivo: doc.nome_cultivo,
+        temperatura_max: doc.temperatura_max,
+        temperatura_min: doc.temperatura_min,
+        pluviometria_max: doc.pluviometria_max,
+        pluviometria_min: doc.pluviometria_min,
+        alertasPluvi: [],
+        alertasTemp: [],
+        pluviometrias: [],
+        temperaturas: [],
+        createdAt: doc.created_at_mongo,
+        deletedAt: doc.deleted_at_mongo,
+        lastUpdate: doc.last_update_mongo,
+      };
+      await this.create(data);
+    });
 
-        updatedCultura.ponto_cultivo = ponto_cultivo;
-        updatedCultura.nome_cultivo = doc.nome_cultivo;
-        updatedCultura.temperatura_max = doc.temperatura_max;
-        updatedCultura.temperatura_min = doc.temperatura_min;
-        updatedCultura.pluviometria_max = doc.pluviometria_max;
-        updatedCultura.pluviometria_min = doc.pluviometria_min;
-        updatedCultura.lastUpdate = doc.lastUpdate;
+    changes["Cultura"].updated.forEach(async (doc) => {
+      const ponto_cultivo: Localização = { latitude: doc.latitude, longitude: doc.longitude };
 
-        await this.culturaModel.updateOne({_id : updatedCultura._id},updatedCultura);
-      });
+      const updatedCultura = await this.culturaModel.findOne({ userId: doc.user_id })
 
-      changes["Cultura"].deleted.forEach(async (id) => {
-        await this.remove(id);
-      });
-    
+      updatedCultura.ponto_cultivo = ponto_cultivo;
+      updatedCultura.nome_cultivo = doc.nome_cultivo;
+      updatedCultura.temperatura_max = doc.temperatura_max;
+      updatedCultura.temperatura_min = doc.temperatura_min;
+      updatedCultura.pluviometria_max = doc.pluviometria_max;
+      updatedCultura.pluviometria_min = doc.pluviometria_min;
+      updatedCultura.lastUpdate = doc.last_update_mongo;
+
+      await this.culturaModel.updateOne({ _id: updatedCultura._id }, updatedCultura);
+    });
+
+    changes["Cultura"].deleted.forEach(async (id) => {
+      await this.remove(id);
+    });
+
     return HttpStatusCode.NoContent;
   }
 
@@ -367,31 +374,31 @@ export class CulturaService {
         responsePluviometriaCreated
       } = await this.findAllByUserId(userId);
 
-      changes["Cultura"] = {
+      changes["cultura"] = {
         created: responseCulturaCreated,
         updated: [],
         deleted: [],
       };
 
-      changes["Temperaturas"] = {
+      changes["temperatura"] = {
         created: responseTemperaturasCreated,
         updated: [],
         deleted: []
       };
 
-      changes["Pluviometria"] = {
+      changes["pluviometria"] = {
         created: responsePluviometriaCreated,
         updated: [],
         deleted: []
       };
 
-      changes["AlertasTemperatura"] = {
+      changes["alertas_temperatura"] = {
         created: responseAlertaTempCreated,
         updated: [],
         deleted: []
       };
 
-      changes["AlertasPluviometria"] = {
+      changes["alertas_pluviometria"] = {
         created: responseAlertaPluviCreated,
         updated: [],
         deleted: []
@@ -465,7 +472,7 @@ export class CulturaService {
 
     const responseCulturaCreated: PullResponseCultura[] = culturas2
       .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
-      .map((doc) => ({
+      .map((doc, index) => ({
         nome_cultivo: doc.nome_cultivo,
         latitude: doc.ponto_cultivo.latitude,
         longitude: doc.ponto_cultivo.longitude,
@@ -473,11 +480,12 @@ export class CulturaService {
         temperatura_min: doc.temperatura_min,
         pluviometria_max: doc.pluviometria_max,
         pluviometria_min: doc.pluviometria_min,
-        lastUpdate: doc.lastUpdate,
-        createdAt: doc.createdAt,
-        deletedAt: '',
-        userId: doc.userId,
-        id: doc.id,
+        last_update_mongo: doc.lastUpdate,
+        created_at_mongo: doc.createdAt,
+        deleted_at_mongo: '',
+        user_id: doc.userId,
+        id: index + 1,
+        id_cultura: doc.id
       }));
 
     const responseTemperaturasCreated: PullResponseTemperatura[] = []
@@ -487,41 +495,46 @@ export class CulturaService {
 
 
     for (let cultura of culturas2) {
-      for (let temperatura of cultura.temperaturas) {
+      cultura.temperaturas.map((temperatura, index) => {
         responseTemperaturasCreated.push({
-          idCultura: cultura.id,
+          id_cultura: cultura.id,
           data: temperatura.data,
           temperatura_max: temperatura.temperatura_max,
           temperatura_media: temperatura.temperatura_media,
-          temperatura_min: temperatura.temperatura_min
+          temperatura_min: temperatura.temperatura_min,
+          id: index + 1
         })
-      }
+      })
 
-      for (let temperatura of cultura.alertasTemp) {
+
+      cultura.alertasTemp.map((alertaTemp, index) => {
         responseAlertaTempCreated.push({
-          idCultura: cultura.id,
-          data: temperatura.data,
-          temperatura_max: temperatura.temperatura_max,
-          temperatura_media: temperatura.temperatura_media,
-          temperatura_min: temperatura.temperatura_min
+          id_cultura: cultura.id,
+          data: alertaTemp.data,
+          temperatura_max: alertaTemp.temperatura_max,
+          temperatura_media: alertaTemp.temperatura_media,
+          temperatura_min: alertaTemp.temperatura_min,
+          id: index + 1
         })
-      }
+      })
 
-      for (let pluviometria of cultura.pluviometrias) {
+      cultura.pluviometrias.map((pluviometria, index) => {
         responsePluviometriaCreated.push({
-          idCultura: cultura.id,
+          id_cultura: cultura.id,
           data: pluviometria.data,
-          pluviometria: pluviometria.pluviometria
+          pluviometria: pluviometria.pluviometria,
+          id: index + 1
         })
-      }
+      })
 
-      for (let pluviometria of cultura.alertasPluvi) {
+      cultura.alertasPluvi.map((alertaPluvi, index) => {
         responseAlertaPluviCreated.push({
-          idCultura: cultura.id,
-          data: pluviometria.data,
-          pluviometria: pluviometria.pluviometria
+          id_cultura: cultura.id,
+          data: alertaPluvi.data,
+          pluviometria: alertaPluvi.pluviometria,
+          id: index + 1
         })
-      }
+      })
     }
 
     return { responseCulturaCreated, responseAlertaTempCreated, responseAlertaPluviCreated, responseTemperaturasCreated, responsePluviometriaCreated };
@@ -587,7 +600,8 @@ export class CulturaService {
 
     const responseCulturaUpdated: PullResponseCultura[] = culturas2
       .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
-      .map((doc) => ({
+      .map((doc, index) => ({
+        id_cultura: doc.id,
         nome_cultivo: doc.nome_cultivo,
         latitude: doc.ponto_cultivo.latitude,
         longitude: doc.ponto_cultivo.longitude,
@@ -595,11 +609,11 @@ export class CulturaService {
         temperatura_min: doc.temperatura_min,
         pluviometria_max: doc.pluviometria_max,
         pluviometria_min: doc.pluviometria_min,
-        lastUpdate: doc.lastUpdate,
-        createdAt: doc.createdAt,
-        deletedAt: '',
-        userId: doc.userId,
-        id: doc.id,
+        last_update_mongo: doc.lastUpdate,
+        created_at_mongo: doc.createdAt,
+        deleted_at_mongo: '',
+        user_id: doc.userId,
+        id: index+1,
       }));
 
     const responseTemperaturasUpdated: PullResponseTemperatura[] = []
@@ -609,41 +623,46 @@ export class CulturaService {
 
 
     for (let cultura of culturas2) {
-      for (let temperatura of cultura.temperaturas) {
+      cultura.temperaturas.map((temperatura, index) => {
         responseTemperaturasUpdated.push({
-          idCultura: cultura.id,
+          id_cultura: cultura.id,
           data: temperatura.data,
           temperatura_max: temperatura.temperatura_max,
           temperatura_media: temperatura.temperatura_media,
-          temperatura_min: temperatura.temperatura_min
+          temperatura_min: temperatura.temperatura_min,
+          id: index + 1
         })
-      }
+      })
 
-      for (let temperatura of cultura.alertasTemp) {
+
+      cultura.alertasTemp.map((alertaTemp, index) => {
         responseAlertaTempUpdated.push({
-          idCultura: cultura.id,
-          data: temperatura.data,
-          temperatura_max: temperatura.temperatura_max,
-          temperatura_media: temperatura.temperatura_media,
-          temperatura_min: temperatura.temperatura_min
+          id_cultura: cultura.id,
+          data: alertaTemp.data,
+          temperatura_max: alertaTemp.temperatura_max,
+          temperatura_media: alertaTemp.temperatura_media,
+          temperatura_min: alertaTemp.temperatura_min,
+          id: index + 1
         })
-      }
+      })
 
-      for (let pluviometria of cultura.pluviometrias) {
+      cultura.pluviometrias.map((pluviometria, index) => {
         responsePluviometriaUpdated.push({
-          idCultura: cultura.id,
+          id_cultura: cultura.id,
           data: pluviometria.data,
-          pluviometria: pluviometria.pluviometria
+          pluviometria: pluviometria.pluviometria,
+          id: index + 1
         })
-      }
+      })
 
-      for (let pluviometria of cultura.alertasPluvi) {
+      cultura.alertasPluvi.map((alertaPluvi, index) => {
         responseAlertaPluviUpdated.push({
-          idCultura: cultura.id,
-          data: pluviometria.data,
-          pluviometria: pluviometria.pluviometria
+          id_cultura: cultura.id,
+          data: alertaPluvi.data,
+          pluviometria: alertaPluvi.pluviometria,
+          id: index + 1
         })
-      }
+      })
     }
 
     return {
@@ -772,7 +791,7 @@ export class CulturaService {
       }
 
       return notificacoes;
-    } catch (error) {}
+    } catch (error) { }
   }
 
   async getUpdatedTemperaturas(last_pulled_at: Date, userId: string) {
@@ -789,13 +808,14 @@ export class CulturaService {
     let result: PullResponseTemperatura[]
 
     for (let temperatura of temperaturas) {
-      temperatura.temperaturas.map(temp => (
+      temperatura.temperaturas.map((temp, index) => (
         result.push({
-          idCultura: temperatura.id,
+          id_cultura: temperatura.id,
           data: temp.data,
           temperatura_max: temp.temperatura_max,
           temperatura_media: temp.temperatura_media,
-          temperatura_min: temp.temperatura_min
+          temperatura_min: temp.temperatura_min,
+          id: index+1
         })
       ))
     }
