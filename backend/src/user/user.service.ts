@@ -115,4 +115,20 @@ export class UserService {
       userId: user.id,
     };
   }
+
+  async loginWithoutPassword(email: string) {
+    const user = await this.userRepository.findOne({ email });
+
+    if (!user) {
+      return { error: 'Usuário inválido' };
+    }
+
+    const payload = { email: user.email, sub: user.id };
+    const token = await this.jwtService.signAsync(payload, { expiresIn: '1h', secret: process.env.TOKEN });
+
+    return {
+      token: token,
+      userId: user.id,
+    };
+  }
 }

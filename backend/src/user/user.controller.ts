@@ -101,4 +101,19 @@ export class UserController {
 
     return result;
   }
+
+  @Post('check-email')
+  @HttpCode(200)
+  async checkEmail(@Body() checkEmailDto: { email: string }) {
+    const result = await this.userService.loginWithoutPassword(checkEmailDto.email);
+
+    if ('error' in result) {
+      if (result.error === 'Usuário inválido') {
+        throw new UnauthorizedException(result.error);
+      }
+      throw new ConflictException('Erro inesperado');
+    }
+
+    return result;
+  }
 }
