@@ -419,32 +419,32 @@ export class CulturaService {
 
       const culturasDeletadas = await this.getDeletedCulturas(lastPulledAtDate.toDate(), userId)
 
-      changes["Cultura"] = {
+      changes["cultura"] = {
         created: responseCulturaCreated,
         updated: responseCulturaUpdated,
         deleted: culturasDeletadas
         ,
       };
 
-      changes["Temperaturas"] = {
+      changes["temperaturas"] = {
         created: responseTemperaturasCreated,
         updated: [],
         deleted: culturasDeletadas
       };
 
-      changes["Pluviometria"] = {
+      changes["pluviometria"] = {
         created: responsePluviometriaCreated,
         updated: [],
         deleted: culturasDeletadas
       };
 
-      changes["AlertasTemperatura"] = {
+      changes["alertas_temperatura"] = {
         created: responseAlertaTempCreated,
         updated: [],
         deleted: culturasDeletadas
       };
 
-      changes["AlertasPluviometria"] = {
+      changes["alertas_pluviometria"] = {
         created: responseAlertaPluviCreated,
         updated: [],
         deleted: culturasDeletadas
