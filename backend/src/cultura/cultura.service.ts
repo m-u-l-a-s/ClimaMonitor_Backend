@@ -426,7 +426,7 @@ export class CulturaService {
         ,
       };
 
-      changes["temperaturas"] = {
+      changes["temperatura"] = {
         created: responseTemperaturasCreated,
         updated: [],
         deleted: culturasDeletadas
