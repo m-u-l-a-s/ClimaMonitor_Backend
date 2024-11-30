@@ -415,10 +415,6 @@ export class CulturaService {
 
       const {
         responseCulturaUpdated,
-        responseTemperaturasUpdated,
-        responsePluviometriaUpdated,
-        responseAlertaTempUpdated,
-        responseAlertaPluviUpdated
       } = await this.getUpdatedCultura(lastPulledAtDate.toDate(), userId)
 
       const culturasDeletadas = await this.getDeletedCulturas(lastPulledAtDate.toDate(), userId)
@@ -432,25 +428,25 @@ export class CulturaService {
 
       changes["Temperaturas"] = {
         created: responseTemperaturasCreated,
-        updated: responseTemperaturasUpdated,
+        updated: [],
         deleted: culturasDeletadas
       };
 
       changes["Pluviometria"] = {
         created: responsePluviometriaCreated,
-        updated: responsePluviometriaUpdated,
+        updated: [],
         deleted: culturasDeletadas
       };
 
       changes["AlertasTemperatura"] = {
         created: responseAlertaTempCreated,
-        updated: responseAlertaTempUpdated,
+        updated: [],
         deleted: culturasDeletadas
       };
 
       changes["AlertasPluviometria"] = {
         created: responseAlertaPluviCreated,
-        updated: responseAlertaPluviUpdated,
+        updated: [],
         deleted: culturasDeletadas
       };
     }
@@ -537,6 +533,64 @@ export class CulturaService {
       })
     }
 
+    const culturas3 = await this.culturaModel
+    .find({ createdAt: { $lt: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId, deletedAt: ""  })
+    .lean()
+    .exec();
+
+    for (let cultura of culturas3) {
+      console.log(cultura.id)
+      cultura.temperaturas.map((temperatura, index) => {
+        if (new Date(temperatura.data) >= last_pulled_at) {
+          responseTemperaturasCreated.push({
+            id_cultura: cultura.id,
+            data: temperatura.data,
+            temperatura_max: temperatura.temperatura_max,
+            temperatura_media: temperatura.temperatura_media,
+            temperatura_min: temperatura.temperatura_min,
+            id: index + 1
+          })
+        }
+      })
+
+
+      cultura.alertasTemp.map((alertaTemp, index) => {
+        if (new Date(alertaTemp.data) >= last_pulled_at) {
+          responseAlertaTempCreated.push({
+            id_cultura: cultura.id,
+            data: alertaTemp.data,
+            temperatura_max: alertaTemp.temperatura_max,
+            temperatura_media: alertaTemp.temperatura_media,
+            temperatura_min: alertaTemp.temperatura_min,
+            id: index + 1
+          })
+        }
+      })
+
+      cultura.pluviometrias.map((pluviometria, index) => {
+        if (new Date(pluviometria.data) >= last_pulled_at) {
+          responsePluviometriaCreated.push({
+            id_cultura: cultura.id,
+            data: pluviometria.data,
+            pluviometria: pluviometria.pluviometria,
+            id: index + 1
+          })
+        }
+      })
+
+      cultura.alertasPluvi.map((alertaPluvi, index) => {
+        if (new Date(alertaPluvi.data) >= last_pulled_at) {
+          responseAlertaPluviCreated.push({
+            id_cultura: cultura.id,
+            data: alertaPluvi.data,
+            pluviometria: alertaPluvi.pluviometria,
+            id: index + 1
+          })
+        }
+      })
+    }
+
+
     return { responseCulturaCreated, responseAlertaTempCreated, responseAlertaPluviCreated, responseTemperaturasCreated, responsePluviometriaCreated };
   }
 
@@ -593,7 +647,6 @@ export class CulturaService {
 
     const culturas2 = await this.culturaModel
       .find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId, deletedAt: "" })
-      .select("-temperaturas -pluviometrias -alertasTemp -alertasPluvi")
       .lean()
       .exec();
 
@@ -621,56 +674,62 @@ export class CulturaService {
     const responsePluviometriaUpdated: PullResponsePluviometria[] = []
     const responseAlertaPluviUpdated: PullResponseAlertasPluvi[] = []
 
+    
+
 
     for (let cultura of culturas2) {
       cultura.temperaturas.map((temperatura, index) => {
-        responseTemperaturasUpdated.push({
-          id_cultura: cultura.id,
-          data: temperatura.data,
-          temperatura_max: temperatura.temperatura_max,
-          temperatura_media: temperatura.temperatura_media,
-          temperatura_min: temperatura.temperatura_min,
-          id: index + 1
-        })
+        if (new Date(temperatura.data) > last_pulled_at) {
+          responseTemperaturasUpdated.push({
+            id_cultura: cultura.id,
+            data: temperatura.data,
+            temperatura_max: temperatura.temperatura_max,
+            temperatura_media: temperatura.temperatura_media,
+            temperatura_min: temperatura.temperatura_min,
+            id: index + 1
+          })
+        }
       })
 
 
       cultura.alertasTemp.map((alertaTemp, index) => {
-        responseAlertaTempUpdated.push({
-          id_cultura: cultura.id,
-          data: alertaTemp.data,
-          temperatura_max: alertaTemp.temperatura_max,
-          temperatura_media: alertaTemp.temperatura_media,
-          temperatura_min: alertaTemp.temperatura_min,
-          id: index + 1
-        })
+        if (new Date(alertaTemp.data) > last_pulled_at) {
+          responseAlertaTempUpdated.push({
+            id_cultura: cultura.id,
+            data: alertaTemp.data,
+            temperatura_max: alertaTemp.temperatura_max,
+            temperatura_media: alertaTemp.temperatura_media,
+            temperatura_min: alertaTemp.temperatura_min,
+            id: index + 1
+          })
+        }
       })
 
       cultura.pluviometrias.map((pluviometria, index) => {
-        responsePluviometriaUpdated.push({
-          id_cultura: cultura.id,
-          data: pluviometria.data,
-          pluviometria: pluviometria.pluviometria,
-          id: index + 1
-        })
+        if (new Date(pluviometria.data) > last_pulled_at) {
+          responsePluviometriaUpdated.push({
+            id_cultura: cultura.id,
+            data: pluviometria.data,
+            pluviometria: pluviometria.pluviometria,
+            id: index + 1
+          })
+        }
       })
 
       cultura.alertasPluvi.map((alertaPluvi, index) => {
-        responseAlertaPluviUpdated.push({
-          id_cultura: cultura.id,
-          data: alertaPluvi.data,
-          pluviometria: alertaPluvi.pluviometria,
-          id: index + 1
-        })
+        if (new Date(alertaPluvi.data) > last_pulled_at) {
+          responseAlertaPluviUpdated.push({
+            id_cultura: cultura.id,
+            data: alertaPluvi.data,
+            pluviometria: alertaPluvi.pluviometria,
+            id: index + 1
+          })
+        }
       })
     }
 
     return {
-      responseCulturaUpdated,
-      responseTemperaturasUpdated,
-      responsePluviometriaUpdated,
-      responseAlertaTempUpdated,
-      responseAlertaPluviUpdated
+      responseCulturaUpdated
     };
   }
 
