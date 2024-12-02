@@ -94,6 +94,7 @@ export class CulturaController {
 
   @Post("/sync")
   async pushChanges(@Body() changes: any) {
-    return this.culturaService.push(changes);
+    console.log(changes)
+    return this.culturaService.push(changes.changes);
   }
 }

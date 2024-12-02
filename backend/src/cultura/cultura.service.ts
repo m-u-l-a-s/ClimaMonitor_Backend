@@ -274,7 +274,6 @@ export class CulturaService {
       const cultura = await this.culturaModel.findOne({ id: id }).exec();
 
       const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
-      console.log('hoje :' + hoje);
       await this.UpdateTempAndPluvi(cultura, hoje);
 
       const updatedCultura = await this.culturaModel.findById(id).exec();
@@ -306,55 +305,64 @@ export class CulturaService {
     return this.culturaModel.findByIdAndUpdate(id, data, { new: true }).exec();
   }
 
-  async push(changes: PushChangesType) {
+  async push(changes: any) {
 
     console.log(changes)
 
-    const { created, deleted, updated } = changes.cultura;
+    if (changes["cultura"]) {
+      if (changes["cultura"].created) {
+        changes["cultura"].created.forEach(async (doc) => {
+    
+          const ponto_cultivo: Localização = { latitude: doc.latitude, longitude: doc.longitude };
+    
+          const data: CulturaDto = {
+            id: doc.id_cultura,
+            userId: doc.user_id,
+            ponto_cultivo: { latitude: ponto_cultivo.latitude, longitude: ponto_cultivo.longitude },
+            nome_cultivo: doc.nome_cultivo,
+            temperatura_max: doc.temperatura_max,
+            temperatura_min: doc.temperatura_min,
+            pluviometria_max: doc.pluviometria_max,
+            pluviometria_min: doc.pluviometria_min,
+            alertasPluvi: [],
+            alertasTemp: [],
+            pluviometrias: [],
+            temperaturas: [],
+            createdAt: doc.created_at_mongo,
+            deletedAt: doc.deleted_at_mongo,
+            lastUpdate: doc.last_update_mongo,
+          };
+          await this.create(data);
+        });
+        console.log("CREATED SUCESSFULLY")
+      }
 
-    created.forEach(async (doc) => {
+      if (changes["cultura"].updated) {
+        changes["cultura"].updated.forEach(async (doc) => {
+          const ponto_cultivo: Localização = { latitude: doc.latitude, longitude: doc.longitude };
+    
+          const updatedCultura = await this.culturaModel.findOne({ _id: doc.id_cultura })
+    
+          updatedCultura.ponto_cultivo = ponto_cultivo;
+          updatedCultura.nome_cultivo = doc.nome_cultivo;
+          updatedCultura.temperatura_max = doc.temperatura_max;
+          updatedCultura.temperatura_min = doc.temperatura_min;
+          updatedCultura.pluviometria_max = doc.pluviometria_max;
+          updatedCultura.pluviometria_min = doc.pluviometria_min;
+          updatedCultura.lastUpdate = doc.last_update_mongo;
+    
+          await this.culturaModel.updateOne({ _id: updatedCultura._id }, updatedCultura);
+        });
+      console.log("UPDATED SUCESSFULLY")
+      }
 
-      const ponto_cultivo: Localização = { latitude: doc.latitude, longitude: doc.longitude };
-
-      const data: CulturaDto = {
-        id: doc.id_cultura,
-        userId: doc.user_id,
-        ponto_cultivo: { latitude: ponto_cultivo.latitude, longitude: ponto_cultivo.longitude },
-        nome_cultivo: doc.nome_cultivo,
-        temperatura_max: doc.temperatura_max,
-        temperatura_min: doc.temperatura_min,
-        pluviometria_max: doc.pluviometria_max,
-        pluviometria_min: doc.pluviometria_min,
-        alertasPluvi: [],
-        alertasTemp: [],
-        pluviometrias: [],
-        temperaturas: [],
-        createdAt: doc.created_at_mongo,
-        deletedAt: doc.deleted_at_mongo,
-        lastUpdate: doc.last_update_mongo,
-      };
-      await this.create(data);
-    });
-
-    updated.forEach(async (doc) => {
-      const ponto_cultivo: Localização = { latitude: doc.latitude, longitude: doc.longitude };
-
-      const updatedCultura = await this.culturaModel.findOne({ _id: doc.id_cultura })
-
-      updatedCultura.ponto_cultivo = ponto_cultivo;
-      updatedCultura.nome_cultivo = doc.nome_cultivo;
-      updatedCultura.temperatura_max = doc.temperatura_max;
-      updatedCultura.temperatura_min = doc.temperatura_min;
-      updatedCultura.pluviometria_max = doc.pluviometria_max;
-      updatedCultura.pluviometria_min = doc.pluviometria_min;
-      updatedCultura.lastUpdate = doc.last_update_mongo;
-
-      await this.culturaModel.updateOne({ _id: updatedCultura._id }, updatedCultura);
-    });
-
-    deleted.forEach(async (id) => {
-      await this.remove(id);
-    });
+      if (changes["cultura"].deleted) {
+        changes["cultura"].deleted.forEach(async (id) => {
+          await this.culturaModel.deleteOne({_id: id});
+        });
+      console.log("DELETED SUCESSFULLY")
+      }
+    }
 
     return HttpStatusCode.NoContent;
   }
@@ -458,8 +466,6 @@ export class CulturaService {
     const parsedDate = parseISO(formatDate).toISOString();
     const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
-    console.log(parsedDate);
-
     const culturas2 = await this.culturaModel
       .find({ createdAt: { $gt: `${formatDate}` }, userId: userId, deletedAt: "" })
       .lean()
@@ -538,7 +544,6 @@ export class CulturaService {
     .exec();
 
     for (let cultura of culturas3) {
-      console.log(cultura.id)
       cultura.temperaturas.map((temperatura, index) => {
         if (new Date(temperatura.data) >= last_pulled_at) {
           responseTemperaturasCreated.push({
