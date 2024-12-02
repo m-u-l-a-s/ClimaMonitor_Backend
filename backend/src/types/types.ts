@@ -7,11 +7,11 @@ export type NotificacaoType = {
 };
 
 export type PushChangesType = {
-  Cultura : PushCulturaChanges
-  Temperatura : PushTemperatura
-  Pluviometria: PushPluviometria
-  AlertasTemperatura: PushAlertasTemperatura
-  AlertasPluviometria: PushAlertasPluviometria
+  cultura : PushCulturaChanges
+  temperatura : PushTemperatura
+  pluviometria: PushPluviometria
+  alertas_temperatura: PushAlertasTemperatura
+  alertas_pluviometria: PushAlertasPluviometria
 }
 
 export type PushCulturaChanges = {

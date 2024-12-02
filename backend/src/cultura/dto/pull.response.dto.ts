@@ -1,7 +1,7 @@
 import { Pluviometria, Temperatura } from "../entities/cultura.entity";
 
 export type PullResponseCultura = {
-    id: number
+    id: string
     id_cultura: string
     latitude: string;
     longitude: string;

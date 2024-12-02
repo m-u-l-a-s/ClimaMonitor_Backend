@@ -191,7 +191,7 @@ export class CulturaService {
 
       const responseCulturaCreated: PullResponseCultura[] = culturas
         .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
-        .map((doc, index) => ({
+        .map((doc) => ({
           nome_cultivo: doc.nome_cultivo,
           latitude: doc.ponto_cultivo.latitude,
           longitude: doc.ponto_cultivo.longitude,
@@ -203,8 +203,8 @@ export class CulturaService {
           created_at_mongo: doc.createdAt,
           deleted_at_mongo: '',
           user_id: doc.userId,
-          id_cultura: doc.id,
-          id: index + 1
+          id_cultura: doc._id.toString(),
+          id: doc._id.toString()
         }));
 
       const responseTemperaturasCreated: PullResponseTemperatura[] = []
@@ -216,7 +216,7 @@ export class CulturaService {
       for (let cultura of culturas) {
         cultura.temperaturas.map((temperatura, index) => {
           responseTemperaturasCreated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: temperatura.data,
             temperatura_max: temperatura.temperatura_max,
             temperatura_media: temperatura.temperatura_media,
@@ -228,7 +228,7 @@ export class CulturaService {
 
         cultura.alertasTemp.map((alertaTemp, index) => {
           responseAlertaTempCreated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: alertaTemp.data,
             temperatura_max: alertaTemp.temperatura_max,
             temperatura_media: alertaTemp.temperatura_media,
@@ -239,7 +239,7 @@ export class CulturaService {
 
         cultura.pluviometrias.map((pluviometria, index) => {
           responsePluviometriaCreated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: pluviometria.data,
             pluviometria: pluviometria.pluviometria,
             id: index + 1
@@ -248,7 +248,7 @@ export class CulturaService {
 
         cultura.alertasPluvi.map((alertaPluvi, index) => {
           responseAlertaPluviCreated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: alertaPluvi.data,
             pluviometria: alertaPluvi.pluviometria,
             id: index + 1
@@ -307,13 +307,12 @@ export class CulturaService {
   }
 
   async push(changes: PushChangesType) {
-    const { created, deleted, updated } = changes.Cultura;
-    // const { created, deleted, updated } = changes.Temperatura;
-    // const { created, deleted, updated } = changes.Pluviometria;
-    // const { created, deleted, updated } = changes.AlertasTemperatura;
-    // const { created, deleted, updated } = changes.AlertasPluviometria;
 
-    changes["Cultura"].created.forEach(async (doc) => {
+    console.log(changes)
+
+    const { created, deleted, updated } = changes.cultura;
+
+    created.forEach(async (doc) => {
 
       const ponto_cultivo: Localização = { latitude: doc.latitude, longitude: doc.longitude };
 
@@ -337,10 +336,10 @@ export class CulturaService {
       await this.create(data);
     });
 
-    changes["Cultura"].updated.forEach(async (doc) => {
+    updated.forEach(async (doc) => {
       const ponto_cultivo: Localização = { latitude: doc.latitude, longitude: doc.longitude };
 
-      const updatedCultura = await this.culturaModel.findOne({ userId: doc.user_id })
+      const updatedCultura = await this.culturaModel.findOne({ _id: doc.id_cultura })
 
       updatedCultura.ponto_cultivo = ponto_cultivo;
       updatedCultura.nome_cultivo = doc.nome_cultivo;
@@ -353,7 +352,7 @@ export class CulturaService {
       await this.culturaModel.updateOne({ _id: updatedCultura._id }, updatedCultura);
     });
 
-    changes["Cultura"].deleted.forEach(async (id) => {
+    deleted.forEach(async (id) => {
       await this.remove(id);
     });
 
@@ -480,8 +479,8 @@ export class CulturaService {
         created_at_mongo: doc.createdAt,
         deleted_at_mongo: '',
         user_id: doc.userId,
-        id: index + 1,
-        id_cultura: doc.id
+        id: doc._id.toString(),
+        id_cultura: doc._id.toString()
       }));
 
     const responseTemperaturasCreated: PullResponseTemperatura[] = []
@@ -493,7 +492,7 @@ export class CulturaService {
     for (let cultura of culturas2) {
       cultura.temperaturas.map((temperatura, index) => {
         responseTemperaturasCreated.push({
-          id_cultura: cultura.id,
+          id_cultura: cultura._id.toString(),
           data: temperatura.data,
           temperatura_max: temperatura.temperatura_max,
           temperatura_media: temperatura.temperatura_media,
@@ -505,7 +504,7 @@ export class CulturaService {
 
       cultura.alertasTemp.map((alertaTemp, index) => {
         responseAlertaTempCreated.push({
-          id_cultura: cultura.id,
+          id_cultura: cultura._id.toString(),
           data: alertaTemp.data,
           temperatura_max: alertaTemp.temperatura_max,
           temperatura_media: alertaTemp.temperatura_media,
@@ -516,7 +515,7 @@ export class CulturaService {
 
       cultura.pluviometrias.map((pluviometria, index) => {
         responsePluviometriaCreated.push({
-          id_cultura: cultura.id,
+          id_cultura: cultura._id.toString(),
           data: pluviometria.data,
           pluviometria: pluviometria.pluviometria,
           id: index + 1
@@ -525,7 +524,7 @@ export class CulturaService {
 
       cultura.alertasPluvi.map((alertaPluvi, index) => {
         responseAlertaPluviCreated.push({
-          id_cultura: cultura.id,
+          id_cultura: cultura._id.toString(),
           data: alertaPluvi.data,
           pluviometria: alertaPluvi.pluviometria,
           id: index + 1
@@ -543,7 +542,7 @@ export class CulturaService {
       cultura.temperaturas.map((temperatura, index) => {
         if (new Date(temperatura.data) >= last_pulled_at) {
           responseTemperaturasCreated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: temperatura.data,
             temperatura_max: temperatura.temperatura_max,
             temperatura_media: temperatura.temperatura_media,
@@ -557,7 +556,7 @@ export class CulturaService {
       cultura.alertasTemp.map((alertaTemp, index) => {
         if (new Date(alertaTemp.data) >= last_pulled_at) {
           responseAlertaTempCreated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: alertaTemp.data,
             temperatura_max: alertaTemp.temperatura_max,
             temperatura_media: alertaTemp.temperatura_media,
@@ -570,7 +569,7 @@ export class CulturaService {
       cultura.pluviometrias.map((pluviometria, index) => {
         if (new Date(pluviometria.data) >= last_pulled_at) {
           responsePluviometriaCreated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: pluviometria.data,
             pluviometria: pluviometria.pluviometria,
             id: index + 1
@@ -581,7 +580,7 @@ export class CulturaService {
       cultura.alertasPluvi.map((alertaPluvi, index) => {
         if (new Date(alertaPluvi.data) >= last_pulled_at) {
           responseAlertaPluviCreated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: alertaPluvi.data,
             pluviometria: alertaPluvi.pluviometria,
             id: index + 1
@@ -654,7 +653,7 @@ export class CulturaService {
     const responseCulturaUpdated: PullResponseCultura[] = culturas2
       .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
       .map((doc, index) => ({
-        id_cultura: doc.id,
+        id_cultura: doc._id.toString(),
         nome_cultivo: doc.nome_cultivo,
         latitude: doc.ponto_cultivo.latitude,
         longitude: doc.ponto_cultivo.longitude,
@@ -666,7 +665,7 @@ export class CulturaService {
         created_at_mongo: doc.createdAt,
         deleted_at_mongo: '',
         user_id: doc.userId,
-        id: index+1,
+        id: doc._id.toString(),
       }));
 
     const responseTemperaturasUpdated: PullResponseTemperatura[] = []
@@ -681,7 +680,7 @@ export class CulturaService {
       cultura.temperaturas.map((temperatura, index) => {
         if (new Date(temperatura.data) > last_pulled_at) {
           responseTemperaturasUpdated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: temperatura.data,
             temperatura_max: temperatura.temperatura_max,
             temperatura_media: temperatura.temperatura_media,
@@ -695,7 +694,7 @@ export class CulturaService {
       cultura.alertasTemp.map((alertaTemp, index) => {
         if (new Date(alertaTemp.data) > last_pulled_at) {
           responseAlertaTempUpdated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: alertaTemp.data,
             temperatura_max: alertaTemp.temperatura_max,
             temperatura_media: alertaTemp.temperatura_media,
@@ -708,7 +707,7 @@ export class CulturaService {
       cultura.pluviometrias.map((pluviometria, index) => {
         if (new Date(pluviometria.data) > last_pulled_at) {
           responsePluviometriaUpdated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: pluviometria.data,
             pluviometria: pluviometria.pluviometria,
             id: index + 1
@@ -719,7 +718,7 @@ export class CulturaService {
       cultura.alertasPluvi.map((alertaPluvi, index) => {
         if (new Date(alertaPluvi.data) > last_pulled_at) {
           responseAlertaPluviUpdated.push({
-            id_cultura: cultura.id,
+            id_cultura: cultura._id.toString(),
             data: alertaPluvi.data,
             pluviometria: alertaPluvi.pluviometria,
             id: index + 1
@@ -859,9 +858,8 @@ export class CulturaService {
 
     const hoje = formatInTimeZone(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
 
-    const temperaturas: CulturaTemperaturas[] = await this.culturaModel
+    const temperaturas: CulturaDocument[] = await this.culturaModel
       .find({ createdAt: { $lte: `${formatDate}` }, lastUpdate: { $gt: `${formatDate}` }, userId: userId, deletedAt: "" })
-      .select("id temperaturas")
       .exec();
 
     let result: PullResponseTemperatura[]
@@ -869,12 +867,12 @@ export class CulturaService {
     for (let temperatura of temperaturas) {
       temperatura.temperaturas.map((temp, index) => (
         result.push({
-          id_cultura: temperatura.id,
+          id_cultura: temperatura._id.toString(),
           data: temp.data,
           temperatura_max: temp.temperatura_max,
           temperatura_media: temp.temperatura_media,
           temperatura_min: temp.temperatura_min,
-          id: index+1
+          id: index + 1
         })
       ))
     }
