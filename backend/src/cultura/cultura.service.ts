@@ -55,6 +55,7 @@ export class CulturaService {
         deletedAt: data.deletedAt,
         lastUpdate: data.lastUpdate,
         userId: data.userId,
+        id: data.id
       });
 
       return this.culturaModel.create(newCultura);
@@ -204,7 +205,7 @@ export class CulturaService {
           deleted_at_mongo: '',
           user_id: doc.userId,
           id_cultura: doc._id.toString(),
-          id: doc._id.toString()
+          id: doc.id
         }));
 
       const responseTemperaturasCreated: PullResponseTemperatura[] = []
@@ -358,7 +359,8 @@ export class CulturaService {
 
       if (changes["cultura"].deleted) {
         changes["cultura"].deleted.forEach(async (id) => {
-          await this.culturaModel.deleteOne({_id: id});
+          console.log("Cultura sendo deletada: "+id)
+          await this.culturaModel.deleteOne({id: id});
         });
       console.log("DELETED SUCESSFULLY")
       }
@@ -485,7 +487,7 @@ export class CulturaService {
         created_at_mongo: doc.createdAt,
         deleted_at_mongo: '',
         user_id: doc.userId,
-        id: doc._id.toString(),
+        id: doc.id,
         id_cultura: doc._id.toString()
       }));
 
@@ -670,7 +672,7 @@ export class CulturaService {
         created_at_mongo: doc.createdAt,
         deleted_at_mongo: '',
         user_id: doc.userId,
-        id: doc._id.toString(),
+        id: doc.id,
       }));
 
     const responseTemperaturasUpdated: PullResponseTemperatura[] = []
