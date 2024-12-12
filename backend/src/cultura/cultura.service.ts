@@ -192,7 +192,7 @@ export class CulturaService {
 
       const responseCulturaCreated: PullResponseCultura[] = culturas
         .filter((doc) => !doc.deletedAt || doc.deletedAt === '')
-        .map((doc) => ({
+        .map((doc, index) => ({
           nome_cultivo: doc.nome_cultivo,
           latitude: doc.ponto_cultivo.latitude,
           longitude: doc.ponto_cultivo.longitude,
@@ -204,8 +204,8 @@ export class CulturaService {
           created_at_mongo: doc.createdAt,
           deleted_at_mongo: '',
           user_id: doc.userId,
-          id_cultura: doc._id.toString(),
-          id: doc.id
+          id_cultura: doc.id,
+          id: index + 1
         }));
 
       const responseTemperaturasCreated: PullResponseTemperatura[] = []
@@ -217,7 +217,7 @@ export class CulturaService {
       for (let cultura of culturas) {
         cultura.temperaturas.map((temperatura, index) => {
           responseTemperaturasCreated.push({
-            id_cultura: cultura._id.toString(),
+            id_cultura: cultura._id,
             data: temperatura.data,
             temperatura_max: temperatura.temperatura_max,
             temperatura_media: temperatura.temperatura_media,
