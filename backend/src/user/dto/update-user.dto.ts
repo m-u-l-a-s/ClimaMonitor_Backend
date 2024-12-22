@@ -6,7 +6,15 @@ export class UpdateUserDto {
     message: 'Username must be between 4 and 30 characters long',
   })
   @IsOptional()
-  readonly username?: string;
+  readonly email?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly name?: string;
+
+  @IsString()
+  @IsOptional()
+  readonly lastName?: string;
 
   @IsString()
   @Length(6, 20, {

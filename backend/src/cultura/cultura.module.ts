@@ -5,8 +5,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Cultura, CulturaSchema } from './entities/cultura.entity';
 
 @Module({
-  imports: [MongooseModule.forFeature([{name : Cultura.name, schema : CulturaSchema}])],
+  imports: [MongooseModule.forFeature([{ name: Cultura.name, schema: CulturaSchema }])],
   controllers: [CulturaController],
   providers: [CulturaService],
 })
-export class CulturaModule {}
+export class CulturaModule { }

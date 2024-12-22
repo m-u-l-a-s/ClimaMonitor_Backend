@@ -3,10 +3,18 @@ import { IsString, Length, IsNotEmpty } from 'class-validator';
 export class CreateUserDto {
   @IsString()
   @Length(4, 30, {
-    message: 'Username must be between 4 and 30 characters long',
+    message: 'Email must be between 4 and 30 characters long',
   })
-  @IsNotEmpty({ message: 'Username is required' })
-  readonly username: string;
+  @IsNotEmpty({ message: 'Email is required' })
+  readonly email: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'name is required' })
+  readonly name: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'lastName is required' })
+  readonly lastName: string;
 
   @IsString()
   @Length(6, 20, {

@@ -1,4 +1,4 @@
-import { IsString, Length, IsNumber, IsArray, ValidateNested, IsObject } from 'class-validator';
+import { IsString, Length, IsNumber, IsArray, ValidateNested, IsObject, IsOptional } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Localização, Temperatura, Pluviometria } from '../entities/cultura.entity';
 
@@ -16,7 +16,7 @@ export class CulturaDto {
   })
   @IsString()
   @Length(4, 30, {
-    message: 'Culture Name must be between 4 and 30 characters long',
+    message: 'Nome da cultura deve ter entre 4 e 30 caracteres.',
   })
   nome_cultivo: string;
 
@@ -51,22 +51,16 @@ export class CulturaDto {
   @ApiProperty({
     description: 'Histórico de temperaturas registradas',
     type: [Object],
-    example: [
-      { data: '2024-01-01', temperatura: 22 },
-      { data: '2024-01-02', temperatura: 24 },
-    ],
+    example: [{ data: '2024-01-01', temperatura_media: 22 }],
   })
   @IsArray()
-  @ValidateNested({ each: true }) // Validar cada item do array
+  @ValidateNested({ each: true })
   temperaturas: Temperatura[];
 
   @ApiProperty({
     description: 'Histórico de pluviometrias registradas (mm)',
     type: [Object],
-    example: [
-      { data: '2024-01-01', pluviometria: 80 },
-      { data: '2024-01-02', pluviometria: 70 },
-    ],
+    example: [{ data: '2024-01-01', pluviometria: 80 }],
   })
   @IsArray()
   @ValidateNested({ each: true })
@@ -89,26 +83,35 @@ export class CulturaDto {
   alertasPluvi: Pluviometria[];
 
   @ApiProperty({
-    description: 'Data da última atualização dos dados',
+    description: 'Data da última atualização',
     example: '2024-09-27T12:00:00Z',
   })
-  lastUpdate?: string;
+  @IsString()
+  lastUpdate: string;
 
   @ApiProperty({
     description: 'Data da criação dos dados',
     example: '2024-09-27T12:00:00Z',
   })
+  @IsString()
   createdAt: string;
-  
+
   @ApiProperty({
     description: 'Data da remoção dos dados',
     example: '2024-09-27T12:00:00Z',
   })
+  @IsOptional()
+  @IsString()
   deletedAt?: string;
 
   @ApiProperty({
-    description: 'identificação no watermelon',
-    example: '2024-09-27T12:00:00Z',
+    description: 'Identificação do usuário',
+    example: '67300baf9ee821cbe41718a1',
   })
+
+  @IsString()
   id: string;
+
+  @IsString()
+  userId: string;
 }

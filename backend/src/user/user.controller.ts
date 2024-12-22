@@ -16,6 +16,7 @@ import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginDto } from './dto/login.dto';
+import * as bcrypt from 'bcrypt';
 
 @Controller('users')
 export class UserController {
@@ -33,12 +34,16 @@ export class UserController {
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async findOne(@Param('id') id: number) {
-    const user = await this.userService.findOne(id);
-    if (!user) {
-      return { message: `User with ID ${id} not found` };
+  async findOne(@Param('id') id: string) {
+    try {
+      const user = await this.userService.findOne(id);
+      if (!user) {
+        return { message: `Usuário com ID ${id} não encontrado` };
+      }
+      return user;
+    } catch (error) {
+      return { message: error.message };
     }
-    return user;
   }
 
   @Post()
@@ -53,20 +58,26 @@ export class UserController {
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
-  async update(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
-    const result = await this.userService.update(id, updateUserDto);
-    if ('error' in result) {
-      if (result.error === 'User not found') {
-        throw new NotFoundException(result.error);
-      }
-      throw new ConflictException('Username already exists');
+  async update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    const payload = {
+      ...updateUserDto,
+      password: updateUserDto.password ? await bcrypt.hash(updateUserDto.password, 10) : undefined,
+    };
+
+    const result = await this.userService.update(id, payload);
+
+    if (result.error === 'User not found') {
+      throw new NotFoundException(result.error);
+    } else if (result.error === 'Email already exists') {
+      throw new ConflictException(result.error);
     }
-    return result;
+
+    return { message: 'Profile updated successfully', user: result.user };
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async remove(@Param('id') id: number) {
+  async remove(@Param('id') id: string) {
     const user = await this.userService.findOne(id);
     if (!user) {
       return { message: `User with ID ${id} not found` };
@@ -76,16 +87,33 @@ export class UserController {
   }
 
   @Post('login')
-  @HttpCode(HttpStatus.OK)
+  @HttpCode(200)
   async login(@Body() loginDto: LoginDto) {
-    const { username, password } = loginDto;
-    const result = await this.userService.login(username, password);
+    const { email, password } = loginDto;
+    const result = await this.userService.login(email, password);
+
     if ('error' in result) {
       if (result.error === 'Usuário inválido' || result.error === 'Senha incorreta') {
         throw new UnauthorizedException(result.error);
       }
-      throw new ConflictException(result.error);
+      throw new ConflictException('Erro inesperado');
     }
+
+    return result;
+  }
+
+  @Post('check-email')
+  @HttpCode(200)
+  async checkEmail(@Body() checkEmailDto: { email: string }) {
+    const result = await this.userService.loginWithoutPassword(checkEmailDto.email);
+
+    if ('error' in result) {
+      if (result.error === 'Usuário inválido') {
+        throw new UnauthorizedException(result.error);
+      }
+      throw new ConflictException('Erro inesperado');
+    }
+
     return result;
   }
 }

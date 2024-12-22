@@ -1,17 +1,18 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
-import { CulturaDto } from '../dto/cultura.dto';
+import { HydratedDocument, ObjectId } from 'mongoose';
 
 export type CulturaDocument = HydratedDocument<Cultura>;
 
 export type Temperatura = {
+  [x: string]: any;
   data: string;
   temperatura_media: number;
-  temperatura_max : number;
-  temperatura_min : number;
+  temperatura_max: number;
+  temperatura_min: number;
 };
 
 export type Pluviometria = {
+  [x: string]: any;
   data: string;
   pluviometria: number;
 };
@@ -21,67 +22,55 @@ export type Localização = {
   longitude: string;
 };
 
-
 @Schema()
 export class Cultura {
-  @Prop({ type: Object, required: true }) // Definindo explicitamente que é um objeto e é obrigatório
+  @Prop({ type: Object, required: true })
   ponto_cultivo: Localização;
 
-  @Prop({ type: String, required: true }) // Nome da cultura como string obrigatória
+  @Prop({ type: String, required: true })
   nome_cultivo: string;
-  
-  @Prop({ type: Number, required: true }) // Temperatura máxima como número
+
+  @Prop({ type: Number, required: true })
   temperatura_max: number;
-  
-  @Prop({ type: Number, required: true }) // Pluviometria máxima como número
+
+  @Prop({ type: Number, required: true })
   pluviometria_max: number;
-  
-  @Prop({ type: Number, required: true }) // Temperatura mínima como número
+
+  @Prop({ type: Number, required: true })
   temperatura_min: number;
-  
-  @Prop({ type: Number, required: true }) // Pluviometria mínima como número
+
+  @Prop({ type: Number, required: true })
   pluviometria_min: number;
-  
-  @Prop({ type: [{ data: String, temperatura_media: Number, temperatura_min: Number, temperatura_max: Number }], required: true }) // Array de objetos de temperatura
+
+  @Prop({
+    type: [{ data: String, temperatura_media: Number, temperatura_max: Number, temperatura_min: Number }],
+    required: true,
+  })
   temperaturas: Temperatura[];
-  
-  @Prop({ type: [{ data: String, pluviometria: Number }], required: true }) // Array de objetos de pluviometria
+
+  @Prop({ type: [{ data: String, pluviometria: Number }], required: true })
   pluviometrias: Pluviometria[];
-  
-  @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
+
+  @Prop({ type: [{ data: String, temperatura_media: Number, temperatura_max: Number, temperatura_min: Number }], required: true })
   alertasTemp: Temperatura[];
-  
-  @Prop({ type: [{ type: Map, of: Number }], required: true }) // Mapeando a estrutura do alerta
+
+  @Prop({ type: [{ data: String, pluviometria: Number }], required: true })
   alertasPluvi: Pluviometria[];
 
-  @Prop({ type: String, required: true }) // Mapeando a última atualização dos dados
+  @Prop({ type: String, required: true })
   lastUpdate: string;
 
-  @Prop({ type: String, required: false})
-  createdAt: string
+  @Prop({ type: String, required: false })
+  createdAt: string;
 
-  @Prop({ type: String, required: false})
-  deletedAt: string
+  @Prop({ type: String, required: false })
+  deletedAt: string;
 
-  @Prop( { type: String, required: false, unique: true})
-  id: string
+  @Prop({ type: String, required: true })
+  userId: string;
 
-  constructor(dto: CulturaDto) {
-    this.ponto_cultivo = dto.ponto_cultivo;
-    this.nome_cultivo = dto.nome_cultivo;
-    this.temperatura_max = dto.temperatura_max;
-    this.pluviometria_max = dto.pluviometria_max;
-    this.temperatura_min = dto.temperatura_min;
-    this.pluviometria_min = dto.pluviometria_min;
-    this.temperaturas = dto.temperaturas;
-    this.pluviometrias = dto.pluviometrias;
-    this.alertasTemp = dto.alertasTemp;
-    this.alertasPluvi = dto.alertasPluvi;
-    this.lastUpdate = dto.lastUpdate;
-    this.createdAt = dto.createdAt;
-    this.deletedAt = dto.deletedAt;
-    this.id = dto.id
-  }
+  @Prop({ type: String, required: false, unique: true })
+  id: string;
 }
 
 export const CulturaSchema = SchemaFactory.createForClass(Cultura);
